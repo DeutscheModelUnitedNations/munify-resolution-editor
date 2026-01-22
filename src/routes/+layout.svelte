@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../app.css';
+	import { base } from '$app/paths';
 
 	let { children } = $props();
 </script>
@@ -15,16 +16,16 @@
 <div class="min-h-screen bg-base-100">
 	<nav class="navbar bg-base-200 border-b border-base-300">
 		<div class="flex-1">
-			<a href="/" class="btn btn-ghost text-xl">
+			<a href="{base}/" class="btn btn-ghost text-xl">
 				<i class="fa-solid fa-file-lines"></i>
 				MUNify Resolution Editor
 			</a>
 		</div>
 		<div class="flex-none">
 			<ul class="menu menu-horizontal px-1">
-				<li><a href="/">Home</a></li>
-				<li><a href="/editor">Editor Demo</a></li>
-				<li><a href="/preview">Preview Demo</a></li>
+				<li><a href="{base}/">Home</a></li>
+				<li><a href="{base}/editor">Editor Demo</a></li>
+				<li><a href="{base}/preview">Preview Demo</a></li>
 				<li>
 					<a
 						href="https://github.com/DeutscheModelUnitedNations/munify-resolution-editor"

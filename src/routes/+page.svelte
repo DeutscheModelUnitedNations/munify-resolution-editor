@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	// Landing page - documentation and feature overview
 </script>
 
@@ -15,11 +16,11 @@
 					Model United Nations conferences.
 				</p>
 				<div class="flex gap-4 justify-center">
-					<a href="/editor" class="btn btn-primary">
+					<a href="{base}/editor" class="btn btn-primary">
 						<i class="fa-solid fa-edit"></i>
 						Try Editor
 					</a>
-					<a href="/preview" class="btn btn-outline">
+					<a href="{base}/preview" class="btn btn-outline">
 						<i class="fa-solid fa-eye"></i>
 						View Preview
 					</a>
