@@ -99,7 +99,7 @@
 		</div>
 
 		<ul class="mt-4 max-h-72 overflow-y-auto space-y-1">
-			{#each filteredPhrases as phrase}
+			{#each filteredPhrases as phrase (phrase)}
 				<li class="flex items-center gap-1">
 					<button
 						type="button"

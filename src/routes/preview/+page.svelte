@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { ResolutionPreview, ResolutionDocumentHeader, ResolutionDocumentFooter } from '$lib/components';
+	import {
+		ResolutionPreview,
+		ResolutionDocumentHeader,
+		ResolutionDocumentFooter
+	} from '$lib/components';
 	import { englishPreamblePhrases, englishOperativePhrases } from '$lib/phrases/en';
 	import { createPhrasePatterns } from '$lib/services/phraseValidation';
 	import type { Resolution, ResolutionHeaderData } from '$lib/schema/resolution';
@@ -10,19 +14,23 @@
 		preamble: [
 			{
 				id: 'p-prev-1',
-				content: 'Recalling all its previous resolutions and presidential statements concerning the situation in the Middle East,'
+				content:
+					'Recalling all its previous resolutions and presidential statements concerning the situation in the Middle East,'
 			},
 			{
 				id: 'p-prev-2',
-				content: 'Reaffirming its commitment to the sovereignty, territorial integrity and political independence of all States in the region,'
+				content:
+					'Reaffirming its commitment to the sovereignty, territorial integrity and political independence of all States in the region,'
 			},
 			{
 				id: 'p-prev-3',
-				content: 'Expressing grave concern at the escalation of violence and the deteriorating humanitarian situation,'
+				content:
+					'Expressing grave concern at the escalation of violence and the deteriorating humanitarian situation,'
 			},
 			{
 				id: 'p-prev-4',
-				content: 'Emphasizing the need for all parties to respect international humanitarian law and protect civilian populations,'
+				content:
+					'Emphasizing the need for all parties to respect international humanitarian law and protect civilian populations,'
 			}
 		],
 		operative: [
@@ -54,7 +62,8 @@
 									{
 										type: 'text',
 										id: 'b-prev-4',
-										content: 'the protection of civilians in accordance with international humanitarian law;'
+										content:
+											'the protection of civilians in accordance with international humanitarian law;'
 									}
 								]
 							},
@@ -114,7 +123,8 @@
 					{
 						type: 'text',
 						id: 'b-prev-10',
-						content: 'Requests the Secretary-General to report to the Council within thirty days on the implementation of this resolution;'
+						content:
+							'Requests the Secretary-General to report to the Council within thirty days on the implementation of this resolution;'
 					}
 				]
 			},
@@ -160,7 +170,8 @@
 			Preview Demo
 		</h1>
 		<p class="text-base-content/70">
-			Read-only preview with official UN document formatting, italicized phrases, and proper punctuation.
+			Read-only preview with official UN document formatting, italicized phrases, and proper
+			punctuation.
 		</p>
 	</div>
 
@@ -189,23 +200,29 @@
 			{#snippet previewHeader({ resolution: res, headerData: hd })}
 				{#if showHeader && useDefaultHeader}
 					<!-- Using the reusable ResolutionDocumentHeader component -->
-					<ResolutionDocumentHeader headerData={headerData} resolution={res} />
+					<ResolutionDocumentHeader {headerData} resolution={res} />
 					<!-- You can add custom content below the default header -->
-					<div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm print:bg-white print:border-blue-400">
+					<div
+						class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm print:bg-white print:border-blue-400"
+					>
 						<div class="flex items-center gap-2 text-blue-700">
 							<i class="fa-solid fa-info-circle"></i>
-							<span>This uses <code>ResolutionDocumentHeader</code> component + custom content</span>
+							<span>This uses <code>ResolutionDocumentHeader</code> component + custom content</span
+							>
 						</div>
 					</div>
 				{:else if showHeader && !useDefaultHeader}
 					<!-- Custom header without using the default component -->
-					<div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 print:bg-white print:border-purple-400">
+					<div
+						class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 print:bg-white print:border-purple-400"
+					>
 						<div class="flex items-center gap-2 text-purple-700">
 							<i class="fa-solid fa-star"></i>
 							<span class="font-semibold">Custom Header Extension Point</span>
 						</div>
 						<p class="text-sm text-purple-600 mt-2">
-							This demonstrates the <code>previewHeader</code> snippet slot without using the default header component. You can build your own header from scratch here.
+							This demonstrates the <code>previewHeader</code> snippet slot without using the default
+							header component. You can build your own header from scratch here.
 						</p>
 						{#if hd}
 							<div class="flex gap-4 mt-3 text-xs text-purple-500">
@@ -221,7 +238,7 @@
 			{#snippet previewFooter({ resolution: res })}
 				{#if customFooter}
 					<!-- Using the reusable ResolutionDocumentFooter component -->
-					<ResolutionDocumentFooter resolution={res} headerData={headerData} />
+					<ResolutionDocumentFooter resolution={res} {headerData} />
 					<!-- Additional custom footer content -->
 					<div class="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
 						<div class="flex items-center gap-2 text-gray-700">
@@ -253,8 +270,13 @@
 				</h2>
 				<ul class="space-y-2 text-sm text-base-content/70">
 					<li><i class="fa-solid fa-check text-success mr-2"></i>Italic opening phrases</li>
-					<li><i class="fa-solid fa-check text-success mr-2"></i>Proper clause numbering (Roman, letters)</li>
-					<li><i class="fa-solid fa-check text-success mr-2"></i>Nested subclauses up to 4 levels</li>
+					<li>
+						<i class="fa-solid fa-check text-success mr-2"></i>Proper clause numbering (Roman,
+						letters)
+					</li>
+					<li>
+						<i class="fa-solid fa-check text-success mr-2"></i>Nested subclauses up to 4 levels
+					</li>
 					<li><i class="fa-solid fa-check text-success mr-2"></i>UN document header format</li>
 					<li><i class="fa-solid fa-check text-success mr-2"></i>Conference emblem support</li>
 					<li><i class="fa-solid fa-check text-success mr-2"></i>Print-optimized styling</li>
@@ -305,7 +327,8 @@
 				Use the reusable header/footer components in your snippets:
 			</p>
 			<div class="mockup-code text-sm overflow-x-auto">
-				<pre><code>{`import {
+				<pre><code
+						>{`import {
   ResolutionPreview,
   ResolutionDocumentHeader,
   ResolutionDocumentFooter
@@ -326,7 +349,8 @@
   {#snippet previewFooter({ resolution })}
     <ResolutionDocumentFooter {resolution} {headerData} />
   {/snippet}
-</ResolutionPreview>`}</code></pre>
+</ResolutionPreview>`}</code
+					></pre>
 			</div>
 		</div>
 	</div>

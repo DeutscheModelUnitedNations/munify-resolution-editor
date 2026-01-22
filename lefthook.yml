@@ -1,0 +1,18 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: '*.{js,ts,svelte}'
+      run: bunx eslint {staged_files} --fix
+      stage_fixed: true
+    format:
+      glob: '*.{js,ts,svelte,json,md,yml,yaml,css}'
+      run: bunx prettier --write {staged_files}
+      stage_fixed: true
+
+pre-push:
+  commands:
+    typecheck:
+      run: bun run check
+    test:
+      run: bun run test

@@ -63,7 +63,7 @@
 	<ul
 		class="menu bg-base-100 rounded-box shadow-lg border border-base-300 absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto flex-nowrap"
 	>
-		{#each suggestions as phrase, i}
+		{#each suggestions as phrase, i (phrase)}
 			<li>
 				<button
 					type="button"

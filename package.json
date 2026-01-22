@@ -43,12 +43,14 @@
 		"preview": "vite preview",
 		"package": "svelte-kit sync && svelte-package && cp src/lib/tailwind.css dist/ && publint",
 		"prepublishOnly": "bun run package",
+		"prepare": "lefthook install",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage"
 	},
 	"peerDependencies": {
 		"svelte": "^5.0.0"
@@ -60,11 +62,13 @@
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
 		"@tailwindcss/vite": "^4.0.0",
 		"@types/node": "^22.10.7",
+		"@vitest/coverage-v8": "^3.0.4",
 		"daisyui": "^5.0.0",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
 		"globals": "^16.0.0",
+		"lefthook": "^1.6.0",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"publint": "^0.3.2",

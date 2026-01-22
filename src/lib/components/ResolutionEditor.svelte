@@ -11,7 +11,6 @@
 		createEmptyOperativeClause,
 		createTextBlock,
 		createSubclausesBlock,
-		createEmptySubClause,
 		generateClauseId,
 		generateSubClauseId,
 		getFirstTextContent,
@@ -84,9 +83,7 @@
 	let resolution = $state<Resolution>(initialResolution);
 
 	// Use provided patterns or create from phrase arrays
-	let preamblePatterns = $derived(
-		preamblePatternsInput ?? createPhrasePatterns(preamblePhrases)
-	);
+	let preamblePatterns = $derived(preamblePatternsInput ?? createPhrasePatterns(preamblePhrases));
 	let operativePatterns = $derived(
 		operativePatternsInput ?? createPhrasePatterns(operativePhrases)
 	);
@@ -173,7 +170,10 @@
 				blocks.push(
 					createSubclausesBlock(
 						convertParsedSubClauses(
-							p.children as { content: string; children?: { content: string; children?: unknown[] }[] }[]
+							p.children as {
+								content: string;
+								children?: { content: string; children?: unknown[] }[];
+							}[]
 						)
 					)
 				);

@@ -44,15 +44,15 @@ This library uses TailwindCSS utility classes for styling. Since the components 
 **Option 1: Import the helper CSS file** (simplest)
 
 ```css
-@import "tailwindcss";
-@import "@deutschemodelunitednations/munify-resolution-editor/tailwind.css";
+@import 'tailwindcss';
+@import '@deutschemodelunitednations/munify-resolution-editor/tailwind.css';
 @plugin "daisyui";
 ```
 
 **Option 2: Add the `@source` directive manually**
 
 ```css
-@import "tailwindcss";
+@import 'tailwindcss';
 @source "../node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte";
 @plugin "daisyui";
 ```
@@ -63,11 +63,11 @@ Add the library to your `content` array in `tailwind.config.js`:
 
 ```javascript
 export default {
-  content: [
-    './src/**/*.{html,js,svelte,ts}',
-    './node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
-  ]
-  // ... rest of config
+	content: [
+		'./src/**/*.{html,js,svelte,ts}',
+		'./node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
+	]
+	// ... rest of config
 };
 ```
 
@@ -75,7 +75,7 @@ export default {
 
 Tailwind CSS generates only the CSS for utility classes that are actually used in your project. By default, it ignores `node_modules` since most packages don't use Tailwind. This library ships Svelte components that use Tailwind utilities, so Tailwind needs to scan them to generate the necessary styles.
 
-> **Note**: This is different from libraries like daisyUI, which are Tailwind *plugins* that generate CSS programmatically. Our library is a *component library* that uses Tailwind utilities in its templates.
+> **Note**: This is different from libraries like daisyUI, which are Tailwind _plugins_ that generate CSS programmatically. Our library is a _component library_ that uses Tailwind utilities in its templates.
 
 ## Usage
 
@@ -83,34 +83,34 @@ Tailwind CSS generates only the CSS for utility classes that are actually used i
 
 ```svelte
 <script lang="ts">
- import { ResolutionEditor } from '@deutschemodelunitednations/munify-resolution-editor';
- import {
-  germanPreamblePhrases,
-  germanOperativePhrases
- } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
- import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
- import type { Resolution } from '@deutschemodelunitednations/munify-resolution-editor/schema';
+	import { ResolutionEditor } from '@deutschemodelunitednations/munify-resolution-editor';
+	import {
+		germanPreamblePhrases,
+		germanOperativePhrases
+	} from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
+	import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
+	import type { Resolution } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 
- let resolution: Resolution = $state({
-  committeeName: 'General Assembly',
-  preamble: [],
-  operative: []
- });
+	let resolution: Resolution = $state({
+		committeeName: 'General Assembly',
+		preamble: [],
+		operative: []
+	});
 
- function handleChange(updated: Resolution) {
-  resolution = updated;
-  console.log('Resolution updated:', updated);
- }
+	function handleChange(updated: Resolution) {
+		resolution = updated;
+		console.log('Resolution updated:', updated);
+	}
 </script>
 
 <ResolutionEditor
- committeeName="General Assembly"
- {resolution}
- editable={true}
- labels={germanLabels}
- preamblePhrases={germanPreamblePhrases}
- operativePhrases={germanOperativePhrases}
- onResolutionChange={handleChange}
+	committeeName="General Assembly"
+	{resolution}
+	editable={true}
+	labels={germanLabels}
+	preamblePhrases={germanPreamblePhrases}
+	operativePhrases={germanOperativePhrases}
+	onResolutionChange={handleChange}
 />
 ```
 
@@ -118,19 +118,19 @@ Tailwind CSS generates only the CSS for utility classes that are actually used i
 
 ```svelte
 <script lang="ts">
- import { ResolutionPreview } from '@deutschemodelunitednations/munify-resolution-editor';
- import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
+	import { ResolutionPreview } from '@deutschemodelunitednations/munify-resolution-editor';
+	import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
 </script>
 
 <ResolutionPreview
- {resolution}
- labels={germanLabels}
- headerData={{
-  conferenceName: 'Model United Nations',
-  committeeName: 'Security Council',
-  topic: 'International Peace and Security',
-  documentNumber: 'S/RES/2026/1'
- }}
+	{resolution}
+	labels={germanLabels}
+	headerData={{
+		conferenceName: 'Model United Nations',
+		committeeName: 'Security Council',
+		topic: 'International Peace and Security',
+		documentNumber: 'S/RES/2026/1'
+	}}
 />
 ```
 
@@ -140,14 +140,14 @@ Tailwind CSS generates only the CSS for utility classes that are actually used i
 
 ```typescript
 import {
- ResolutionEditor, // Full editing interface
- ResolutionPreview, // Read-only preview
- ClauseEditor, // Preamble clause editor
- OperativeClauseEditor, // Operative clause editor
- SubClauseEditor, // Recursive subclause editor
- PhraseLookupModal, // Phrase browsing modal
- PhraseSuggestions, // Inline autocomplete
- ImportModal // Text import modal
+	ResolutionEditor, // Full editing interface
+	ResolutionPreview, // Read-only preview
+	ClauseEditor, // Preamble clause editor
+	OperativeClauseEditor, // Operative clause editor
+	SubClauseEditor, // Recursive subclause editor
+	PhraseLookupModal, // Phrase browsing modal
+	PhraseSuggestions, // Inline autocomplete
+	ImportModal // Text import modal
 } from '@deutschemodelunitednations/munify-resolution-editor';
 ```
 
@@ -155,20 +155,20 @@ import {
 
 ```typescript
 import {
- type Resolution,
- type PreambleClause,
- type OperativeClause,
- type SubClause,
- type ClauseBlock,
- type TextBlock,
- type SubclausesBlock,
- type ResolutionHeaderData,
- resolutionSchema,
- createEmptyOperativeClause,
- createEmptySubClause,
- createTextBlock,
- createSubclausesBlock,
- getSubClauseLabel
+	type Resolution,
+	type PreambleClause,
+	type OperativeClause,
+	type SubClause,
+	type ClauseBlock,
+	type TextBlock,
+	type SubclausesBlock,
+	type ResolutionHeaderData,
+	resolutionSchema,
+	createEmptyOperativeClause,
+	createEmptySubClause,
+	createTextBlock,
+	createSubclausesBlock,
+	getSubClauseLabel
 } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 ```
 
@@ -177,8 +177,8 @@ import {
 ```typescript
 // All German phrases
 import {
- germanPreamblePhrases,
- germanOperativePhrases
+	germanPreamblePhrases,
+	germanOperativePhrases
 } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
 
 // Or import individually
@@ -199,23 +199,23 @@ The editor supports Svelte 5 snippet-based extension points for customization:
 
 ```svelte
 <ResolutionEditor {...props}>
- {#snippet clauseToolbar({ clause, index })}
-  <button onclick={() => addAmendment(clause)}>Add Amendment</button>
- {/snippet}
+	{#snippet clauseToolbar({ clause, index })}
+		<button onclick={() => addAmendment(clause)}>Add Amendment</button>
+	{/snippet}
 
- {#snippet clauseAnnotations({ clause, index })}
-  {#if hasAmendments(clause)}
-   <div class="badge badge-warning">Has amendments</div>
-  {/if}
- {/snippet}
+	{#snippet clauseAnnotations({ clause, index })}
+		{#if hasAmendments(clause)}
+			<div class="badge badge-warning">Has amendments</div>
+		{/if}
+	{/snippet}
 
- {#snippet previewHeader({ resolution, headerData })}
-  <div class="custom-header">Custom header content</div>
- {/snippet}
+	{#snippet previewHeader({ resolution, headerData })}
+		<div class="custom-header">Custom header content</div>
+	{/snippet}
 
- {#snippet previewFooter({ resolution })}
-  <div class="signatures">Signatures section</div>
- {/snippet}
+	{#snippet previewFooter({ resolution })}
+		<div class="signatures">Signatures section</div>
+	{/snippet}
 </ResolutionEditor>
 ```
 

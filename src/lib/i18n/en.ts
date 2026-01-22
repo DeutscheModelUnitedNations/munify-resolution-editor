@@ -62,8 +62,7 @@ export const englishLabels: ResolutionEditorLabels = {
 	resolutionImportOperative: 'Import Operative Clauses',
 	resolutionImportButton: 'Import {count} clause(s)',
 	resolutionImportPreview: 'Preview: {count} clause(s) detected',
-	resolutionImportHintPreamble:
-		'Paste preamble clauses, separated by comma and line break.',
+	resolutionImportHintPreamble: 'Paste preamble clauses, separated by comma and line break.',
 	resolutionImportHintOperative:
 		'Paste numbered operative clauses. Sub-clauses will be detected automatically.',
 	resolutionImportTipsTitle: 'Tips for Best Results',
@@ -72,8 +71,7 @@ export const englishLabels: ResolutionEditorLabels = {
 	resolutionImportTipsPreamble3: 'Clauses are imported in the order entered',
 	resolutionImportTipsOperative1: 'Numbered main clauses: 1. 2. 3. or 1) 2) 3)',
 	resolutionImportTipsOperative2: 'Lettered sub-clauses: a) b) c) or (a) (b) (c)',
-	resolutionImportTipsOperative3:
-		'Nested sub-clauses with Roman numerals: i) ii) iii)',
+	resolutionImportTipsOperative3: 'Nested sub-clauses with Roman numerals: i) ii) iii)',
 	resolutionImportTipsOperative4: 'Further nesting with double letters: aa) bb) cc)',
 	resolutionImportLLMTitle: 'AI Formatting',
 	resolutionImportLLMInstructions:

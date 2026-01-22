@@ -72,8 +72,7 @@ export const germanLabels: ResolutionEditorLabels = {
 	resolutionImportTipsPreamble3: 'Die Klauseln werden in der eingegebenen Reihenfolge importiert',
 	resolutionImportTipsOperative1: 'Nummerierte Hauptklauseln: 1. 2. 3. oder 1) 2) 3)',
 	resolutionImportTipsOperative2: 'Unterklauseln mit Buchstaben: a) b) c) oder (a) (b) (c)',
-	resolutionImportTipsOperative3:
-		'Verschachtelte Unterklauseln mit römischen Ziffern: i) ii) iii)',
+	resolutionImportTipsOperative3: 'Verschachtelte Unterklauseln mit römischen Ziffern: i) ii) iii)',
 	resolutionImportTipsOperative4: 'Weitere Verschachtelung mit Doppelbuchstaben: aa) bb) cc)',
 	resolutionImportLLMTitle: 'KI-Formatierung',
 	resolutionImportLLMInstructions:

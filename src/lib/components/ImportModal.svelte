@@ -27,7 +27,9 @@
 
 	function copyPrompt() {
 		const prompt =
-			type === 'preamble' ? t.resolutionImportLLMPromptPreamble : t.resolutionImportLLMPromptOperative;
+			type === 'preamble'
+				? t.resolutionImportLLMPromptPreamble
+				: t.resolutionImportLLMPromptOperative;
 		navigator.clipboard.writeText(prompt).then(
 			() => {
 				copied = true;
@@ -185,14 +187,14 @@
 				</div>
 				<ul class="bg-base-200 rounded-lg p-3 max-h-48 overflow-y-auto space-y-1 text-sm font-mono">
 					{#if type === 'preamble'}
-						{#each parsedPreamble as clause, i}
+						{#each parsedPreamble as clause, index (index)}
 							<li class="flex items-start gap-2">
 								<i class="fa-solid fa-check text-success mt-1 shrink-0"></i>
 								<span class="text-base-content/80">{truncate(clause)}</span>
 							</li>
 						{/each}
 					{:else}
-						{#each parsedOperative as clause, i}
+						{#each parsedOperative as clause, i (i)}
 							<li class="flex items-start gap-2">
 								<span class="font-bold text-primary shrink-0">{i + 1}.</span>
 								<div>

@@ -171,7 +171,7 @@
 	}
 
 	// Handle outdent from nested subclause - insert after parent
-	function handleNestedOutdent(subClauseIndex: number, blockIndex: number) {
+	function handleNestedOutdent(subClauseIndex: number, _blockIndex: number) {
 		return (outdentedSubClause: SubClause, _afterIndex: number) => {
 			// Insert the outdented subclause after subClauseIndex in our array
 			const newSubClauses = [...subClauses];

@@ -95,7 +95,13 @@ export {
 
 // i18n
 export type { ResolutionEditorLabels, PartialLabels } from './i18n/types';
-export { englishLabels, germanLabels, defaultLabels, mergeLabels, createLabelFunction } from './i18n';
+export {
+	englishLabels,
+	germanLabels,
+	defaultLabels,
+	mergeLabels,
+	createLabelFunction
+} from './i18n';
 
 // Phrases
 export {

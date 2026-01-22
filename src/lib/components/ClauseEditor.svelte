@@ -147,7 +147,11 @@
 			{t.resolutionMoveDown}
 		</button>
 		{#if showAddSubClause && onAddSubClause}
-			<button type="button" class="btn btn-ghost btn-xs gap-1 text-primary" onclick={onAddSubClause}>
+			<button
+				type="button"
+				class="btn btn-ghost btn-xs gap-1 text-primary"
+				onclick={onAddSubClause}
+			>
 				<i class="fa-solid fa-indent"></i>
 				{t.resolutionAddSubClause}
 			</button>

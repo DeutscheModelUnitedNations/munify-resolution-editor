@@ -1,6 +1,35 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	// Landing page - documentation and feature overview
+
+	// Code examples stored as constants to avoid svelte-check parsing issues with embedded script tags
+	const basicUsageCode = `<${'script'} lang="ts">
+  import {
+    ResolutionEditor,
+    englishPreamblePhrases,
+    englishOperativePhrases,
+    type Resolution
+  } from '@deutschemodelunitednations/munify-resolution-editor';
+
+  let resolution: Resolution = $state({
+    committeeName: 'General Assembly',
+    preamble: [],
+    operative: []
+  });
+
+  function handleChange(updated: Resolution) {
+    resolution = updated;
+  }
+</${'script'}>
+
+<ResolutionEditor
+  committeeName="General Assembly"
+  {resolution}
+  editable={true}
+  preamblePhrases={englishPreamblePhrases}
+  operativePhrases={englishOperativePhrases}
+  onResolutionChange={handleChange}
+/>`;
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-4xl">
@@ -116,8 +145,9 @@
 				Installation
 			</h2>
 			<div class="mockup-code">
-				<pre
-					data-prefix="$"><code>bun add @deutschemodelunitednations/munify-resolution-editor</code></pre>
+				<pre data-prefix="$"><code
+						>bun add @deutschemodelunitednations/munify-resolution-editor</code
+					></pre>
 			</div>
 
 			<h3 class="font-semibold mt-6 mb-2">Peer Dependencies</h3>
@@ -135,33 +165,7 @@
 				Basic Usage
 			</h2>
 			<div class="mockup-code text-sm overflow-x-auto">
-				<pre><code>{`<script lang="ts">
-  import {
-    ResolutionEditor,
-    englishPreamblePhrases,
-    englishOperativePhrases,
-    type Resolution
-  } from '@deutschemodelunitednations/munify-resolution-editor';
-
-  let resolution: Resolution = $state({
-    committeeName: 'General Assembly',
-    preamble: [],
-    operative: []
-  });
-
-  function handleChange(updated: Resolution) {
-    resolution = updated;
-  }
-</script>
-
-<ResolutionEditor
-  committeeName="General Assembly"
-  {resolution}
-  editable={true}
-  preamblePhrases={englishPreamblePhrases}
-  operativePhrases={englishOperativePhrases}
-  onResolutionChange={handleChange}
-/>`}</code></pre>
+				<pre><code>{basicUsageCode}</code></pre>
 			</div>
 		</div>
 	</div>
@@ -176,7 +180,8 @@
 				The editor supports Svelte 5 snippet-based extension points for customization:
 			</p>
 			<div class="mockup-code text-sm overflow-x-auto">
-				<pre><code>{`import {
+				<pre><code
+						>{`import {
   ResolutionEditor,
   ResolutionDocumentHeader,
   ResolutionDocumentFooter
@@ -204,7 +209,8 @@
   {#snippet previewFooter({ resolution })}
     <ResolutionDocumentFooter {resolution} {headerData} />
   {/snippet}
-</ResolutionEditor>`}</code></pre>
+</ResolutionEditor>`}</code
+					></pre>
 			</div>
 
 			<h3 class="font-semibold mt-6 mb-2">Available Extension Points</h3>

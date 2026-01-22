@@ -3,15 +3,10 @@
 	import type {
 		Resolution,
 		SubClause,
-		ClauseBlock,
 		OperativeClause,
 		ResolutionHeaderData
 	} from '../schema/resolution';
-	import {
-		getSubClauseLabel,
-		isClauseEmpty,
-		migrateResolution
-	} from '../schema/resolution';
+	import { getSubClauseLabel, isClauseEmpty, migrateResolution } from '../schema/resolution';
 	import {
 		type PhrasePattern,
 		validatePhrase,
@@ -57,9 +52,7 @@
 	let nonEmptyOperative = $derived(resolution.operative.filter((c) => !isClauseEmpty(c)));
 
 	// Use provided patterns or create from phrase arrays
-	let preamblePatterns = $derived(
-		preamblePatternsInput ?? createPhrasePatterns(preamblePhrases)
-	);
+	let preamblePatterns = $derived(preamblePatternsInput ?? createPhrasePatterns(preamblePhrases));
 	let operativePatterns = $derived(
 		operativePatternsInput ?? createPhrasePatterns(operativePhrases)
 	);
@@ -191,7 +184,7 @@
 	<!-- Preamble Section -->
 	{#if nonEmptyPreamble.length > 0}
 		<div class="mb-6">
-			{#each nonEmptyPreamble as clause}
+			{#each nonEmptyPreamble as clause (clause.id)}
 				{@const formatted = formatClauseContent(clause.content, preamblePatterns)}
 				<p class="mb-3 text-justify indent-8">
 					<span class="italic">{formatted.firstPhrase}</span>{formatted.rest},
@@ -203,7 +196,7 @@
 	<!-- Operative Section -->
 	{#if nonEmptyOperative.length > 0}
 		<ol class="list-none p-0">
-			{#each nonEmptyOperative as clause, opIndex}
+			{#each nonEmptyOperative as clause, opIndex (clause.id)}
 				{@const isLastOperative = opIndex === nonEmptyOperative.length - 1}
 				<li class="mb-2 text-justify indent-8">
 					<span class="font-bold">{opIndex + 1}.</span>
@@ -216,10 +209,10 @@
 	<!-- Render blocks of an operative clause -->
 	{#snippet operativeClauseBlocks(
 		clause: OperativeClause,
-		opIndex: number,
+		_opIndex: number,
 		isLastOperative: boolean
 	)}
-		{#each clause.blocks as block, blockIndex}
+		{#each clause.blocks as block, blockIndex (block.id)}
 			{@const isLastBlock = blockIndex === clause.blocks.length - 1}
 			{#if block.type === 'text'}
 				{@const formatted = formatClauseContent(block.content, operativePatterns)}
@@ -247,7 +240,7 @@
 	<!-- Render a list of subclauses at a given depth -->
 	{#snippet subClauseList(subClauses: SubClause[], depth: number, isLastInParent: boolean)}
 		<ol class="list-none p-0 mt-2">
-			{#each subClauses as subClause, index}
+			{#each subClauses as subClause, index (subClause.id)}
 				{@const isLastSubClause = index === subClauses.length - 1}
 				<!-- Depth 1: first-line indent only; Depth 2+: all lines indented equally (no first-line indent) -->
 				<li class="mb-1 text-justify {depth === 1 ? 'indent-8' : 'pl-8 indent-0'}">
@@ -260,7 +253,7 @@
 
 	<!-- Render blocks within a subclause -->
 	{#snippet subClauseBlocks(subClause: SubClause, depth: number, isLastInParent: boolean)}
-		{#each subClause.blocks as block, blockIndex}
+		{#each subClause.blocks as block, blockIndex (block.id)}
 			{@const isLastBlock = blockIndex === subClause.blocks.length - 1}
 			{#if block.type === 'text'}
 				{#if block.content.trim()}

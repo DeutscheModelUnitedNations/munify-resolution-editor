@@ -9,15 +9,18 @@
 		preamble: [
 			{
 				id: 'p-demo-1',
-				content: 'Recalling its resolution 70/1 of 25 September 2015, entitled "Transforming our world: the 2030 Agenda for Sustainable Development",'
+				content:
+					'Recalling its resolution 70/1 of 25 September 2015, entitled "Transforming our world: the 2030 Agenda for Sustainable Development",'
 			},
 			{
 				id: 'p-demo-2',
-				content: 'Recognizing the importance of international cooperation in addressing global challenges,'
+				content:
+					'Recognizing the importance of international cooperation in addressing global challenges,'
 			},
 			{
 				id: 'p-demo-3',
-				content: 'Deeply concerned by the ongoing climate crisis and its effects on vulnerable populations,'
+				content:
+					'Deeply concerned by the ongoing climate crisis and its effects on vulnerable populations,'
 			}
 		],
 		operative: [
@@ -27,7 +30,8 @@
 					{
 						type: 'text',
 						id: 'b-demo-1',
-						content: 'Calls upon all Member States to strengthen their commitment to the Paris Agreement;'
+						content:
+							'Calls upon all Member States to strengthen their commitment to the Paris Agreement;'
 					}
 				]
 			},
@@ -37,7 +41,8 @@
 					{
 						type: 'text',
 						id: 'b-demo-2',
-						content: 'Urges developed countries to provide financial and technical support to developing nations:'
+						content:
+							'Urges developed countries to provide financial and technical support to developing nations:'
 					},
 					{
 						type: 'subclauses',
@@ -92,10 +97,10 @@
 		authoringDelegation: 'United States of America'
 	};
 
-	let lastChange: Resolution | null = $state(null);
+	let _lastChange: Resolution | null = $state(null);
 
 	function handleChange(updated: Resolution) {
-		lastChange = updated;
+		_lastChange = updated;
 		resolution = updated;
 	}
 
