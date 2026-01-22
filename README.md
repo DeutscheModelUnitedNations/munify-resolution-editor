@@ -37,18 +37,23 @@ This library requires:
 
 ## Styling Setup
 
-This library uses TailwindCSS utility classes for styling. Since the components are distributed as Svelte files, you need to configure your project's Tailwind to scan the library's components.
+This library uses TailwindCSS utility classes for styling. Since the components are distributed as Svelte files, you need to configure your project's Tailwind to scan the library's components. This is the [standard approach for Tailwind-based component libraries](https://tailwindcss.com/docs/detecting-classes-in-source-files).
 
-### Tailwind CSS v4
+### Tailwind CSS v4 (Recommended)
 
-Add a `@source` directive to your main CSS file (e.g., `app.css`) to include this library's components in the Tailwind scan:
+**Option 1: Import the helper CSS file** (simplest)
 
 ```css
-@import 'tailwindcss';
+@import "tailwindcss";
+@import "@deutschemodelunitednations/munify-resolution-editor/tailwind.css";
+@plugin "daisyui";
+```
 
-/* Include resolution-editor library components in Tailwind scan */
+**Option 2: Add the `@source` directive manually**
+
+```css
+@import "tailwindcss";
 @source "../node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte";
-
 @plugin "daisyui";
 ```
 
@@ -58,17 +63,19 @@ Add the library to your `content` array in `tailwind.config.js`:
 
 ```javascript
 export default {
- content: [
-  './src/**/*.{html,js,svelte,ts}',
-  './node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
- ]
- // ... rest of config
+  content: [
+    './src/**/*.{html,js,svelte,ts}',
+    './node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
+  ]
+  // ... rest of config
 };
 ```
 
-### Using `bun link` for Development
+### Why is this needed?
 
-If you're using `bun link` for local development, the symlink will still point to `node_modules`, so the paths above will work correctly.
+Tailwind CSS generates only the CSS for utility classes that are actually used in your project. By default, it ignores `node_modules` since most packages don't use Tailwind. This library ships Svelte components that use Tailwind utilities, so Tailwind needs to scan them to generate the necessary styles.
+
+> **Note**: This is different from libraries like daisyUI, which are Tailwind *plugins* that generate CSS programmatically. Our library is a *component library* that uses Tailwind utilities in its templates.
 
 ## Usage
 

@@ -29,7 +29,8 @@
 		"./i18n/de": {
 			"types": "./dist/i18n/de.d.ts",
 			"default": "./dist/i18n/de.js"
-		}
+		},
+		"./tailwind.css": "./dist/tailwind.css"
 	},
 	"files": [
 		"dist",
@@ -40,7 +41,7 @@
 		"dev": "vite dev",
 		"build": "vite build && bun run package",
 		"preview": "vite preview",
-		"package": "svelte-kit sync && svelte-package && publint",
+		"package": "svelte-kit sync && svelte-package && cp src/lib/tailwind.css dist/ && publint",
 		"prepublishOnly": "bun run package",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

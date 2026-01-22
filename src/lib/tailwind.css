@@ -1,0 +1,15 @@
+/**
+ * Tailwind CSS Integration Helper
+ *
+ * Import this file in your main CSS to automatically include the
+ * resolution editor components in Tailwind's content scan.
+ *
+ * Usage in your app.css:
+ *
+ *   @import "tailwindcss";
+ *   @import "@deutschemodelunitednations/munify-resolution-editor/tailwind.css";
+ *   @plugin "daisyui";
+ */
+
+/* Include all Svelte components from this package in Tailwind's scan */
+@source "./**/*.svelte";
