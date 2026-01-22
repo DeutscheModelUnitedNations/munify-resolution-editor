@@ -32,7 +32,9 @@
 		}
 	},
 	"files": [
-		"dist"
+		"dist",
+		"LICENSE",
+		"README.md"
 	],
 	"scripts": {
 		"dev": "vite dev",
@@ -78,7 +80,11 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/DeutscheModelUnitedNations/munify-resolution-editor"
+		"url": "git+https://github.com/DeutscheModelUnitedNations/munify-resolution-editor.git"
+	},
+	"homepage": "https://deutschemodelunitednations.github.io/munify-resolution-editor",
+	"bugs": {
+		"url": "https://github.com/DeutscheModelUnitedNations/munify-resolution-editor/issues"
 	},
 	"keywords": [
 		"svelte",

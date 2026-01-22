@@ -48,7 +48,7 @@
 		<aside>
 			<p>
 				<i class="fa-solid fa-copyright"></i>
-				2024 Deutsche Model United Nations e.V. - MIT License
+				2026 Deutsche Model United Nations e.V. - MIT License
 			</p>
 		</aside>
 	</footer>

@@ -134,11 +134,11 @@
 	// Sample header metadata
 	const headerData: ResolutionHeaderData = {
 		conferenceName: 'Model United Nations',
-		conferenceTitle: 'MUN Conference 2024',
+		conferenceTitle: 'MUN Conference 2026',
 		committeeAbbreviation: 'SC',
 		committeeFullName: 'Security Council',
 		committeeResolutionHeadline: 'The Security Council',
-		documentNumber: 'S/RES/2024/001',
+		documentNumber: 'S/RES/2026/001',
 		topic: 'Situation in the Middle East',
 		authoringDelegation: 'France'
 	};

@@ -16,14 +16,24 @@ A Svelte 5 component library for creating and editing UN-style resolutions. Buil
 ## Installation
 
 ```bash
-bun add @deutschemodelunitednations/munify-resolution-editor
+# Using bun
+bun add -d @deutschemodelunitednations/munify-resolution-editor
+
+# Using npm
+npm install -D @deutschemodelunitednations/munify-resolution-editor
+
+# Using pnpm
+pnpm add -D @deutschemodelunitednations/munify-resolution-editor
 ```
+
+> **Note**: Svelte component libraries should be installed as `devDependencies` (`-d` / `-D` flag). SvelteKit bundles components at build time, so they don't need to be runtime dependencies.
 
 ## Peer Dependencies
 
-This library requires the following peer dependencies:
+This library requires:
 
 - `svelte` ^5.0.0
+- TailwindCSS and DaisyUI configured in your project (for styling)
 
 ## Styling Setup
 
@@ -48,12 +58,12 @@ Add the library to your `content` array in `tailwind.config.js`:
 
 ```javascript
 export default {
-  content: [
-    './src/**/*.{html,js,svelte,ts}',
-    './node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
-  ],
-  // ... rest of config
-}
+ content: [
+  './src/**/*.{html,js,svelte,ts}',
+  './node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
+ ]
+ // ... rest of config
+};
 ```
 
 ### Using `bun link` for Development
@@ -66,31 +76,34 @@ If you're using `bun link` for local development, the symlink will still point t
 
 ```svelte
 <script lang="ts">
-  import { ResolutionEditor } from '@deutschemodelunitednations/munify-resolution-editor';
-  import { germanPreamblePhrases, germanOperativePhrases } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
-  import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
-  import type { Resolution } from '@deutschemodelunitednations/munify-resolution-editor/schema';
+ import { ResolutionEditor } from '@deutschemodelunitednations/munify-resolution-editor';
+ import {
+  germanPreamblePhrases,
+  germanOperativePhrases
+ } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
+ import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
+ import type { Resolution } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 
-  let resolution: Resolution = $state({
-    committeeName: 'General Assembly',
-    preamble: [],
-    operative: []
-  });
+ let resolution: Resolution = $state({
+  committeeName: 'General Assembly',
+  preamble: [],
+  operative: []
+ });
 
-  function handleChange(updated: Resolution) {
-    resolution = updated;
-    console.log('Resolution updated:', updated);
-  }
+ function handleChange(updated: Resolution) {
+  resolution = updated;
+  console.log('Resolution updated:', updated);
+ }
 </script>
 
 <ResolutionEditor
-  committeeName="General Assembly"
-  {resolution}
-  editable={true}
-  labels={germanLabels}
-  preamblePhrases={germanPreamblePhrases}
-  operativePhrases={germanOperativePhrases}
-  onResolutionChange={handleChange}
+ committeeName="General Assembly"
+ {resolution}
+ editable={true}
+ labels={germanLabels}
+ preamblePhrases={germanPreamblePhrases}
+ operativePhrases={germanOperativePhrases}
+ onResolutionChange={handleChange}
 />
 ```
 
@@ -98,19 +111,19 @@ If you're using `bun link` for local development, the symlink will still point t
 
 ```svelte
 <script lang="ts">
-  import { ResolutionPreview } from '@deutschemodelunitednations/munify-resolution-editor';
-  import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
+ import { ResolutionPreview } from '@deutschemodelunitednations/munify-resolution-editor';
+ import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
 </script>
 
 <ResolutionPreview
-  {resolution}
-  labels={germanLabels}
-  headerData={{
-    conferenceName: 'Model United Nations',
-    committeeName: 'Security Council',
-    topic: 'International Peace and Security',
-    documentNumber: 'S/RES/2024/1'
-  }}
+ {resolution}
+ labels={germanLabels}
+ headerData={{
+  conferenceName: 'Model United Nations',
+  committeeName: 'Security Council',
+  topic: 'International Peace and Security',
+  documentNumber: 'S/RES/2026/1'
+ }}
 />
 ```
 
@@ -120,14 +133,14 @@ If you're using `bun link` for local development, the symlink will still point t
 
 ```typescript
 import {
-  ResolutionEditor,      // Full editing interface
-  ResolutionPreview,     // Read-only preview
-  ClauseEditor,          // Preamble clause editor
-  OperativeClauseEditor, // Operative clause editor
-  SubClauseEditor,       // Recursive subclause editor
-  PhraseLookupModal,     // Phrase browsing modal
-  PhraseSuggestions,     // Inline autocomplete
-  ImportModal            // Text import modal
+ ResolutionEditor, // Full editing interface
+ ResolutionPreview, // Read-only preview
+ ClauseEditor, // Preamble clause editor
+ OperativeClauseEditor, // Operative clause editor
+ SubClauseEditor, // Recursive subclause editor
+ PhraseLookupModal, // Phrase browsing modal
+ PhraseSuggestions, // Inline autocomplete
+ ImportModal // Text import modal
 } from '@deutschemodelunitednations/munify-resolution-editor';
 ```
 
@@ -135,20 +148,20 @@ import {
 
 ```typescript
 import {
-  type Resolution,
-  type PreambleClause,
-  type OperativeClause,
-  type SubClause,
-  type ClauseBlock,
-  type TextBlock,
-  type SubclausesBlock,
-  type ResolutionHeaderData,
-  resolutionSchema,
-  createEmptyOperativeClause,
-  createEmptySubClause,
-  createTextBlock,
-  createSubclausesBlock,
-  getSubClauseLabel
+ type Resolution,
+ type PreambleClause,
+ type OperativeClause,
+ type SubClause,
+ type ClauseBlock,
+ type TextBlock,
+ type SubclausesBlock,
+ type ResolutionHeaderData,
+ resolutionSchema,
+ createEmptyOperativeClause,
+ createEmptySubClause,
+ createTextBlock,
+ createSubclausesBlock,
+ getSubClauseLabel
 } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 ```
 
@@ -156,7 +169,10 @@ import {
 
 ```typescript
 // All German phrases
-import { germanPreamblePhrases, germanOperativePhrases } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
+import {
+ germanPreamblePhrases,
+ germanOperativePhrases
+} from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
 
 // Or import individually
 import { preamblePhrases } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
@@ -175,26 +191,24 @@ import { germanLabels } from '@deutschemodelunitednations/munify-resolution-edit
 The editor supports Svelte 5 snippet-based extension points for customization:
 
 ```svelte
-<ResolutionEditor
-  {...props}
->
-  {#snippet clauseToolbar({ clause, index })}
-    <button onclick={() => addAmendment(clause)}>Add Amendment</button>
-  {/snippet}
+<ResolutionEditor {...props}>
+ {#snippet clauseToolbar({ clause, index })}
+  <button onclick={() => addAmendment(clause)}>Add Amendment</button>
+ {/snippet}
 
-  {#snippet clauseAnnotations({ clause, index })}
-    {#if hasAmendments(clause)}
-      <div class="badge badge-warning">Has amendments</div>
-    {/if}
-  {/snippet}
+ {#snippet clauseAnnotations({ clause, index })}
+  {#if hasAmendments(clause)}
+   <div class="badge badge-warning">Has amendments</div>
+  {/if}
+ {/snippet}
 
-  {#snippet previewHeader({ resolution, headerData })}
-    <div class="custom-header">Custom header content</div>
-  {/snippet}
+ {#snippet previewHeader({ resolution, headerData })}
+  <div class="custom-header">Custom header content</div>
+ {/snippet}
 
-  {#snippet previewFooter({ resolution })}
-    <div class="signatures">Signatures section</div>
-  {/snippet}
+ {#snippet previewFooter({ resolution })}
+  <div class="signatures">Signatures section</div>
+ {/snippet}
 </ResolutionEditor>
 ```
 

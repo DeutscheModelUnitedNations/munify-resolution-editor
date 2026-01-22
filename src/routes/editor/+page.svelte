@@ -83,11 +83,11 @@
 	// Sample header metadata for preview
 	const headerData: ResolutionHeaderData = {
 		conferenceName: 'Model United Nations',
-		conferenceTitle: 'MUN Conference 2024',
+		conferenceTitle: 'MUN Conference 2026',
 		committeeAbbreviation: 'GA',
 		committeeFullName: 'General Assembly',
 		committeeResolutionHeadline: 'The General Assembly',
-		documentNumber: 'A/RES/2024/001',
+		documentNumber: 'A/RES/2026/001',
 		topic: 'Climate Action and Sustainable Development',
 		authoringDelegation: 'United States of America'
 	};
