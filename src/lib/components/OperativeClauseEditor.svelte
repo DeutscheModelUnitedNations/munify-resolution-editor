@@ -21,9 +21,9 @@
 		onMoveDown?: () => void;
 		onDelete?: () => void;
 		onFocus?: () => void;
-		onUnlock?: () => void;
 		onInteraction?: () => void;
 		disabled?: boolean;
+		active?: boolean;
 		canMoveUp?: boolean;
 		canMoveDown?: boolean;
 		validationError?: string;
@@ -41,9 +41,9 @@
 		onMoveDown,
 		onDelete,
 		onFocus,
-		onUnlock,
 		onInteraction,
 		disabled = false,
+		active = false,
 		canMoveUp = true,
 		canMoveDown = true,
 		validationError,
@@ -183,6 +183,8 @@
 							? t.resolutionOperativePlaceholder
 							: t.resolutionContinuationPlaceholder}
 						class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed"
+						class:bg-base-200={!active}
+						class:bg-base-100={active}
 						class:textarea-warning={blockIndex === 0 && validationError}
 						rows="2"
 						onkeydown={blockIndex === 0 ? handleKeyDown : undefined}
@@ -225,6 +227,7 @@
 					depth={1}
 					onUpdate={(items) => updateSubClauses(blockIndex, items)}
 					{onOutdentToOperative}
+					{active}
 					{labels}
 				/>
 				<!-- Add continuation text after subclauses -->
@@ -249,13 +252,6 @@
 				<i class="fa-solid fa-triangle-exclamation"></i>
 				{t.resolutionUnknownPhrase}
 			</span>
-		{/if}
-
-		{#if onUnlock}
-			<button type="button" class="btn btn-warning btn-xs gap-1" onclick={onUnlock}>
-				<i class="fa-solid fa-lock-open"></i>
-				{t.doneEditing}
-			</button>
 		{/if}
 
 		<div class="flex-1"></div>

@@ -7,6 +7,7 @@
 		type OperativeClause,
 		type SubClause,
 		type ClauseBlock,
+		type AmendmentOverlay,
 		createEmptyResolution,
 		createEmptyOperativeClause,
 		createTextBlock,
@@ -24,6 +25,7 @@
 	import type { ParsedOperativeClause } from '../services/resolutionParser';
 	import type { ResolutionEditorLabels } from '../i18n/types';
 	import { englishLabels } from '../i18n/en';
+	import { fade } from 'svelte/transition';
 	import ClauseEditor from './ClauseEditor.svelte';
 	import OperativeClauseEditor from './OperativeClauseEditor.svelte';
 	import ResolutionPreview from './ResolutionPreview.svelte';
@@ -46,9 +48,24 @@
 		onResolutionChange?: (resolution: Resolution) => void;
 		onCopySuccess?: (phrase: string) => void;
 		onCopyError?: (error: Error) => void;
+		// Clause-level locking (all optional — editor works without them)
+		onClauseLock?: (clauseId: string) => void;
+		onClauseUnlock?: (clauseId: string) => void;
+		onClauseInteraction?: (clauseId: string) => void;
+		lockedClauseIds?: Set<string>;
+		editableClauseIds?: Set<string>;
+		// Amendment overlays
+		amendments?: AmendmentOverlay[];
+		rejectedClauseIds?: string[];
+		onAmendmentClick?: (amendmentId: string) => void;
 		// Extension points (Svelte 5 snippets)
 		clauseToolbar?: Snippet<[{ clause: OperativeClause; index: number }]>;
+		preambleClauseToolbar?: Snippet<[{ clause: PreambleClause; index: number }]>;
 		clauseAnnotations?: Snippet<[{ clause: OperativeClause; index: number }]>;
+		preambleAnnotations?: Snippet<[{ clause: PreambleClause; index: number }]>;
+		afterPreambleClause?: Snippet<[{ clause: PreambleClause; index: number }]>;
+		afterOperativeClause?: Snippet<[{ clause: OperativeClause; index: number }]>;
+		betweenOperativeClauses?: Snippet<[{ index: number }]>;
 		previewHeader?: Snippet<[{ resolution: Resolution; headerData?: ResolutionHeaderData }]>;
 		previewFooter?: Snippet<[{ resolution: Resolution }]>;
 	}
@@ -66,21 +83,64 @@
 		onResolutionChange,
 		onCopySuccess,
 		onCopyError,
+		onClauseLock,
+		onClauseUnlock,
+		onClauseInteraction,
+		lockedClauseIds,
+		editableClauseIds,
+		amendments = [],
+		rejectedClauseIds = [],
+		onAmendmentClick,
 		clauseToolbar,
+		preambleClauseToolbar,
 		clauseAnnotations,
+		preambleAnnotations,
+		afterPreambleClause,
+		afterOperativeClause,
+		betweenOperativeClauses,
 		previewHeader,
 		previewFooter
 	}: Props = $props();
+
+	// Clause disabled logic: when editableClauseIds is provided, a clause is disabled
+	// unless the user holds a confirmed lock for it, OR if it's locked by another user.
+	function isClauseDisabled(clauseId: string): boolean {
+		if (lockedClauseIds?.has(clauseId)) return true;
+		if (editableClauseIds !== undefined && !editableClauseIds.has(clauseId)) return true;
+		return false;
+	}
+
+	// Hover-to-lock overlay
+	let hoveredClauseId = $state<string | null>(null);
+
+	function needsLockOverlay(clauseId: string): boolean {
+		if (!onClauseLock) return false;
+		if (editableClauseIds?.has(clauseId)) return false;
+		if (lockedClauseIds?.has(clauseId)) return false;
+		return true;
+	}
 
 	// Merge labels with defaults
 	const t = { ...englishLabels, ...labels };
 
 	// Initialize resolution state with migration from legacy format
-	const initialResolution = migrateResolution(
-		initialContent ?? createEmptyResolution(committeeName)
-	) as Resolution;
+	let resolution = $state<Resolution>(
+		migrateResolution(initialContent ?? createEmptyResolution(committeeName)) as Resolution
+	);
 
-	let resolution = $state<Resolution>(initialResolution);
+	// Sync from prop when it changes externally (e.g. subscription updates for viewers)
+	// Uses a plain (non-reactive) flag to suppress the onResolutionChange callback
+	let skipNextOnChange = false;
+	let lastPropRef = initialContent;
+	$effect(() => {
+		if (initialContent !== lastPropRef) {
+			lastPropRef = initialContent;
+			skipNextOnChange = true;
+			resolution = migrateResolution(
+				initialContent ?? createEmptyResolution(committeeName)
+			) as Resolution;
+		}
+	});
 
 	// Use provided patterns or create from phrase arrays
 	let preamblePatterns = $derived(preamblePatternsInput ?? createPhrasePatterns(preamblePhrases));
@@ -93,8 +153,21 @@
 		resolution.committeeName = committeeName;
 	});
 
-	// Notify parent of resolution changes
+	// Notify parent of resolution changes (deep-read to track sub-property mutations)
+	// Skips the initial mount fire and prop-sync fires to avoid feedback loops
+	let initialized = false;
 	$effect(() => {
+		const snapshot = JSON.stringify(resolution);
+		// @ts-expect-error — snapshot is used to establish deep tracking
+		void snapshot;
+		if (!initialized) {
+			initialized = true;
+			return;
+		}
+		if (skipNextOnChange) {
+			skipNextOnChange = false;
+			return;
+		}
 		onResolutionChange?.(resolution);
 	});
 
@@ -331,21 +404,74 @@
 				{:else}
 					<div class="space-y-2">
 						{#each resolution.preamble as clause, index (clause.id)}
-							<ClauseEditor
-								bind:content={clause.content}
-								placeholder={t.resolutionPreamblePlaceholder}
-								canMoveUp={index > 0}
-								canMoveDown={index < resolution.preamble.length - 1}
-								onMoveUp={() => movePreambleClause(index, 'up')}
-								onMoveDown={() => movePreambleClause(index, 'down')}
-								onDelete={() => deletePreambleClause(index)}
-								onFocus={() => (lastFocusedPreambleIndex = index)}
-								validationError={!preambleValidation[index]?.valid
-									? t.resolutionUnknownPhrase
-									: undefined}
-								patterns={preamblePatterns}
-								{labels}
-							/>
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="relative"
+								onmouseenter={() => (hoveredClauseId = clause.id)}
+								onmouseleave={() => {
+									if (hoveredClauseId === clause.id) hoveredClauseId = null;
+								}}
+							>
+								{#if preambleAnnotations}
+									<div class="absolute -left-2 -top-2 z-10">
+										{@render preambleAnnotations({ clause, index })}
+									</div>
+								{/if}
+								<ClauseEditor
+									bind:content={clause.content}
+									placeholder={t.resolutionPreamblePlaceholder}
+									canMoveUp={index > 0}
+									canMoveDown={index < resolution.preamble.length - 1}
+									onMoveUp={() => movePreambleClause(index, 'up')}
+									onMoveDown={() => movePreambleClause(index, 'down')}
+									onDelete={() => deletePreambleClause(index)}
+									onFocus={() => {
+										lastFocusedPreambleIndex = index;
+										// phrase insertion tracking only
+									}}
+									active={editableClauseIds?.has(clause.id) ?? false}
+									onInteraction={() => onClauseInteraction?.(clause.id)}
+									disabled={isClauseDisabled(clause.id)}
+									validationError={!preambleValidation[index]?.valid
+										? t.resolutionUnknownPhrase
+										: undefined}
+									patterns={preamblePatterns}
+									{labels}
+								/>
+								{#if hoveredClauseId === clause.id && needsLockOverlay(clause.id)}
+									<!-- svelte-ignore a11y_click_events_have_key_events -->
+									<div
+										class="absolute inset-0 z-20 flex items-center justify-center rounded-lg backdrop-blur-sm bg-base-300/30 cursor-pointer"
+										transition:fade={{ duration: 150 }}
+										onclick={() => {
+											onClauseLock?.(clause.id);
+											hoveredClauseId = null;
+										}}
+										role="button"
+										tabindex="0"
+									>
+										<button type="button" class="btn btn-primary btn-sm gap-2">
+											<i class="fa-solid fa-pen"></i>
+											{t.startEditing}
+										</button>
+									</div>
+								{/if}
+								{#if editableClauseIds?.has(clause.id)}
+									<button
+										type="button"
+										class="absolute top-1 right-1 z-10 btn btn-warning btn-xs gap-1"
+										onclick={() => onClauseUnlock?.(clause.id)}
+									>
+										<i class="fa-solid fa-lock-open"></i>
+										{t.doneEditing}
+									</button>
+								{/if}
+							</div>
+							{#if preambleClauseToolbar}
+								<div class="mt-2">
+									{@render preambleClauseToolbar({ clause, index })}
+								</div>
+							{/if}
 						{/each}
 						<button type="button" class="btn btn-sm btn-ghost w-full" onclick={addPreambleClause}>
 							<i class="fa-solid fa-plus"></i>
@@ -399,7 +525,14 @@
 				{:else}
 					<div class="space-y-4">
 						{#each resolution.operative as clause, index (clause.id)}
-							<div class="relative">
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="relative"
+								onmouseenter={() => (hoveredClauseId = clause.id)}
+								onmouseleave={() => {
+									if (hoveredClauseId === clause.id) hoveredClauseId = null;
+								}}
+							>
 								{#if clauseAnnotations}
 									<div class="absolute -left-2 -top-2 z-10">
 										{@render clauseAnnotations({ clause, index })}
@@ -414,7 +547,13 @@
 									onMoveUp={() => moveOperativeClause(index, 'up')}
 									onMoveDown={() => moveOperativeClause(index, 'down')}
 									onDelete={() => deleteOperativeClause(index)}
-									onFocus={() => (lastFocusedOperativeIndex = index)}
+									onFocus={() => {
+										lastFocusedOperativeIndex = index;
+										// phrase insertion tracking only
+									}}
+									active={editableClauseIds?.has(clause.id) ?? false}
+									onInteraction={() => onClauseInteraction?.(clause.id)}
+									disabled={isClauseDisabled(clause.id)}
 									validationError={!operativeValidation[index]?.valid
 										? t.resolutionUnknownPhrase
 										: undefined}
@@ -422,12 +561,40 @@
 									onOutdentToOperative={(newOp) => insertOperativeClauseAfter(index, newOp)}
 									{labels}
 								/>
-								{#if clauseToolbar}
-									<div class="mt-2 flex justify-end">
-										{@render clauseToolbar({ clause, index })}
+								{#if hoveredClauseId === clause.id && needsLockOverlay(clause.id)}
+									<!-- svelte-ignore a11y_click_events_have_key_events -->
+									<div
+										class="absolute inset-0 z-20 flex items-center justify-center rounded-lg backdrop-blur-sm bg-base-300/30 cursor-pointer"
+										transition:fade={{ duration: 150 }}
+										onclick={() => {
+											onClauseLock?.(clause.id);
+											hoveredClauseId = null;
+										}}
+										role="button"
+										tabindex="0"
+									>
+										<button type="button" class="btn btn-primary btn-sm gap-2">
+											<i class="fa-solid fa-pen"></i>
+											{t.startEditing}
+										</button>
 									</div>
 								{/if}
+								{#if editableClauseIds?.has(clause.id)}
+									<button
+										type="button"
+										class="absolute top-1 right-1 z-10 btn btn-warning btn-xs gap-1"
+										onclick={() => onClauseUnlock?.(clause.id)}
+									>
+										<i class="fa-solid fa-lock-open"></i>
+										{t.doneEditing}
+									</button>
+								{/if}
 							</div>
+							{#if clauseToolbar}
+								<div class="mt-2">
+									{@render clauseToolbar({ clause, index })}
+								</div>
+							{/if}
 						{/each}
 						<button type="button" class="btn btn-sm btn-ghost w-full" onclick={addOperativeClause}>
 							<i class="fa-solid fa-plus"></i>
@@ -461,8 +628,14 @@
 							{preamblePatterns}
 							{operativePatterns}
 							{labels}
+							{amendments}
+							{rejectedClauseIds}
+							{onAmendmentClick}
 							{previewHeader}
 							{previewFooter}
+							{afterPreambleClause}
+							{afterOperativeClause}
+							{betweenOperativeClauses}
 						/>
 					</div>
 				{/if}
@@ -476,8 +649,14 @@
 			{preamblePatterns}
 			{operativePatterns}
 			{labels}
+			{amendments}
+			{rejectedClauseIds}
+			{onAmendmentClick}
 			{previewHeader}
 			{previewFooter}
+			{afterPreambleClause}
+			{afterOperativeClause}
+			{betweenOperativeClauses}
 		/>
 	{/if}
 </fieldset>

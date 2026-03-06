@@ -27,6 +27,7 @@
 		// Called when a nested subclause wants to outdent to parent level
 		onOutdentToParent?: (subClause: SubClause, afterParentIndex: number) => void;
 		disabled?: boolean;
+		active?: boolean;
 		labels?: Partial<ResolutionEditorLabels>;
 	}
 
@@ -38,6 +39,7 @@
 		parentSubClauseIndex,
 		onOutdentToParent,
 		disabled = false,
+		active = false,
 		labels = {}
 	}: Props = $props();
 
@@ -248,6 +250,8 @@
 									? t.resolutionSubClausePlaceholder
 									: t.resolutionContinuationPlaceholder}
 								class="textarea textarea-bordered textarea-sm w-full min-h-14 resize-y text-sm leading-relaxed"
+								class:bg-base-200={!active}
+								class:bg-base-100={active}
 								rows="2"
 							></textarea>
 
@@ -365,6 +369,7 @@
 							{onOutdentToOperative}
 							parentSubClauseIndex={subClauseIndex}
 							onOutdentToParent={handleNestedOutdent(subClauseIndex, blockIndex)}
+							{active}
 							{labels}
 						/>
 						<!-- Add continuation text after subclauses -->

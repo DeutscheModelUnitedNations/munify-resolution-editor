@@ -13,9 +13,9 @@
 		onDelete?: () => void;
 		onAddSubClause?: () => void;
 		onFocus?: () => void;
-		onUnlock?: () => void;
 		onInteraction?: () => void;
 		disabled?: boolean;
+		active?: boolean;
 		canMoveUp?: boolean;
 		canMoveDown?: boolean;
 		showAddSubClause?: boolean;
@@ -33,9 +33,9 @@
 		onDelete,
 		onAddSubClause,
 		onFocus,
-		onUnlock,
 		onInteraction,
 		disabled = false,
+		active = false,
 		canMoveUp = true,
 		canMoveDown = true,
 		showAddSubClause = false,
@@ -105,6 +105,8 @@
 				bind:value={content}
 				{placeholder}
 				class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed"
+				class:bg-base-200={!active}
+				class:bg-base-100={active}
 				class:textarea-warning={validationError}
 				rows="2"
 				oninput={handleInput}
@@ -133,13 +135,6 @@
 				<i class="fa-solid fa-triangle-exclamation"></i>
 				{t.resolutionUnknownPhrase}
 			</span>
-		{/if}
-
-		{#if onUnlock}
-			<button type="button" class="btn btn-warning btn-xs gap-1" onclick={onUnlock}>
-				<i class="fa-solid fa-lock-open"></i>
-				{t.doneEditing}
-			</button>
 		{/if}
 
 		<div class="flex-1"></div>
