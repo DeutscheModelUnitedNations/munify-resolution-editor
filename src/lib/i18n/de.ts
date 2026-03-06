@@ -117,6 +117,7 @@ Zu formatierender Text:`,
 
 	// Preview metadata
 	resolutionAuthoringDelegation: 'Einreichende Delegation',
+	resolutionSponsoringDelegations: 'Unterstützerstaaten',
 	resolutionDisclaimer:
 		'Dieses Dokument wurde im Rahmen einer {conferenceName}-Simulation erstellt und besitzt keine rechtliche Gültigkeit.',
 

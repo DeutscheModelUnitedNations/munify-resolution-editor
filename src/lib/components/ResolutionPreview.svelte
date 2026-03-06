@@ -148,7 +148,7 @@
 	class="resolution-preview w-full max-w-[900px] mx-auto px-16 py-8 bg-white text-gray-900 text-[0.95rem] leading-[1.7]"
 >
 	{#if previewHeader}
-		{@render previewHeader({ resolution, headerData })}
+		<div class="font-sans">{@render previewHeader({ resolution, headerData })}</div>
 	{:else if headerData}
 		<!-- Header Row: Conference Title left, Document Number right -->
 		<div class="flex justify-between items-baseline mb-2">
@@ -194,6 +194,14 @@
 			</div>
 		{/if}
 
+		<!-- Sponsoring Delegations -->
+		{#if headerData.sponsoringDelegations?.length}
+			<div class="mb-4">
+				<div class="font-bold uppercase text-sm">{t.resolutionSponsoringDelegations}</div>
+				<div class="ml-6">{headerData.sponsoringDelegations.join(', ')}</div>
+			</div>
+		{/if}
+
 		<!-- Small Print Disclaimer -->
 		<div class="text-gray-500 text-[0.65rem] leading-snug mt-6 mb-2">
 			{getDisclaimerText()}
@@ -230,7 +238,7 @@
 					<span class="italic">{formatted.firstPhrase}</span>{formatted.rest},
 				</p>
 				{#if afterPreambleClause}
-					{@render afterPreambleClause({ clause, index })}
+					<div class="font-sans">{@render afterPreambleClause({ clause, index })}</div>
 				{/if}
 			{/each}
 		</div>
@@ -257,7 +265,7 @@
 				>
 					{#if clauseAmendments.length > 0}
 						<!-- Amendment type indicators -->
-						<span class="inline-flex gap-1 mr-1 text-xs align-middle">
+						<span class="inline-flex gap-1 mr-1 text-xs align-middle font-sans">
 							{#each clauseAmendments as amendment (amendment.id)}
 								<!-- svelte-ignore a11y_click_events_have_key_events -->
 								<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -297,7 +305,7 @@
 							class="ml-8 mb-2 pl-3 border-l-4 border-success bg-success/10 rounded-r cursor-pointer"
 							onclick={() => onAmendmentClick?.(altAmendment.id)}
 						>
-							<div class="text-xs text-success font-semibold mb-1">
+							<div class="text-xs text-success font-semibold mb-1 font-sans">
 								{t.amendmentAlterText}
 								{#if altAmendment.proposerName}
 									— {altAmendment.proposerName}
@@ -310,10 +318,10 @@
 					{/if}
 				{/each}
 				{#if afterOperativeClause}
-					{@render afterOperativeClause({ clause, index: opIndex })}
+					<div class="font-sans">{@render afterOperativeClause({ clause, index: opIndex })}</div>
 				{/if}
 				{#if betweenOperativeClauses}
-					{@render betweenOperativeClauses({ index: opIndex })}
+					<div class="font-sans">{@render betweenOperativeClauses({ index: opIndex })}</div>
 				{/if}
 				<!-- ADD amendments after this clause -->
 				{@const addAmendmentsAfter = addAmendmentsByPosition.get(opIndex) ?? []}
@@ -331,7 +339,7 @@
 			class="ml-8 mb-2 pl-3 border-l-4 border-success bg-success/5 rounded-r py-1 cursor-pointer"
 			onclick={() => onAmendmentClick?.(amendment.id)}
 		>
-			<span class="text-xs text-success font-semibold">
+			<span class="text-xs text-success font-semibold font-sans">
 				+ {t.amendmentAdd}
 				{#if amendment.proposerName}
 					— {amendment.proposerName}
@@ -417,14 +425,14 @@
 
 	<!-- Empty state -->
 	{#if nonEmptyPreamble.length === 0 && nonEmptyOperative.length === 0}
-		<div class="text-center text-base-content/50 py-8">
+		<div class="text-center text-base-content/50 py-8 font-sans">
 			<i class="fa-solid fa-file-lines text-4xl mb-2"></i>
 			<p>{t.resolutionNoClausesYet}</p>
 		</div>
 	{/if}
 
 	{#if previewFooter}
-		{@render previewFooter({ resolution })}
+		<div class="font-sans">{@render previewFooter({ resolution })}</div>
 	{/if}
 </div>
 

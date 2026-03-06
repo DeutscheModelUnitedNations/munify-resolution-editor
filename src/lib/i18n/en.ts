@@ -116,6 +116,7 @@ Text to format:`,
 
 	// Preview metadata
 	resolutionAuthoringDelegation: 'Authoring Delegation',
+	resolutionSponsoringDelegations: 'Sponsoring Delegations',
 	resolutionDisclaimer:
 		'This document was created as part of a {conferenceName} simulation and has no legal validity.',
 

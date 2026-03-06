@@ -78,6 +78,14 @@
 	</div>
 {/if}
 
+<!-- Sponsoring Delegations -->
+{#if headerData.sponsoringDelegations?.length}
+	<div class="mb-4">
+		<div class="font-bold uppercase text-sm">{t.resolutionSponsoringDelegations}</div>
+		<div class="ml-6">{headerData.sponsoringDelegations.join(', ')}</div>
+	</div>
+{/if}
+
 <!-- Small Print Disclaimer -->
 <div class="text-gray-500 text-[0.65rem] leading-snug mt-6 mb-2">
 	{getDisclaimerText()}

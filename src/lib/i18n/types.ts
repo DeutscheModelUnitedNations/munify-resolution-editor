@@ -81,6 +81,7 @@ export interface ResolutionEditorLabels {
 
 	// Preview metadata
 	resolutionAuthoringDelegation: string;
+	resolutionSponsoringDelegations: string;
 	resolutionDisclaimer: string;
 
 	// Locking

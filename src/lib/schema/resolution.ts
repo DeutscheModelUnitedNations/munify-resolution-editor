@@ -125,6 +125,8 @@ export interface ResolutionHeaderData {
 	documentNumber?: string;
 	topic?: string;
 	authoringDelegation?: string;
+	/** List of sponsoring delegation names */
+	sponsoringDelegations?: string[];
 	lastEdited?: Date | string;
 	/** Conference emblem data URL (SVG), falls back to UN emblem if not provided */
 	conferenceEmblem?: string;
