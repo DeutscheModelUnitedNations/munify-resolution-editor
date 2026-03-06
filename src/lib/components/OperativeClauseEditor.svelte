@@ -21,6 +21,9 @@
 		onMoveDown?: () => void;
 		onDelete?: () => void;
 		onFocus?: () => void;
+		onUnlock?: () => void;
+		onInteraction?: () => void;
+		disabled?: boolean;
 		canMoveUp?: boolean;
 		canMoveDown?: boolean;
 		validationError?: string;
@@ -38,6 +41,9 @@
 		onMoveDown,
 		onDelete,
 		onFocus,
+		onUnlock,
+		onInteraction,
+		disabled = false,
 		canMoveUp = true,
 		canMoveDown = true,
 		validationError,
@@ -116,6 +122,7 @@
 		if (blockIndex === 0) {
 			showSuggestions = content.length > 0 && content.length < 30 && !content.includes(',');
 		}
+		onInteraction?.();
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
@@ -152,7 +159,9 @@
 	}
 </script>
 
-<div class="bg-base-100 rounded-lg p-3 border border-base-300">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="bg-base-100 rounded-lg p-3 border border-base-300" onclick={() => onInteraction?.()}>
 	{#each clause.blocks as block, blockIndex (block.id)}
 		{#if block.type === 'text'}
 			<!-- Text block -->
@@ -242,13 +251,20 @@
 			</span>
 		{/if}
 
+		{#if onUnlock}
+			<button type="button" class="btn btn-warning btn-xs gap-1" onclick={onUnlock}>
+				<i class="fa-solid fa-lock-open"></i>
+				{t.doneEditing}
+			</button>
+		{/if}
+
 		<div class="flex-1"></div>
 
 		<button
 			type="button"
 			class="btn btn-ghost btn-xs gap-1"
 			onclick={onMoveUp}
-			disabled={!canMoveUp}
+			disabled={disabled || !canMoveUp}
 		>
 			<i class="fa-solid fa-chevron-up"></i>
 			{t.resolutionMoveUp}
@@ -257,7 +273,7 @@
 			type="button"
 			class="btn btn-ghost btn-xs gap-1"
 			onclick={onMoveDown}
-			disabled={!canMoveDown}
+			disabled={disabled || !canMoveDown}
 		>
 			<i class="fa-solid fa-chevron-down"></i>
 			{t.resolutionMoveDown}

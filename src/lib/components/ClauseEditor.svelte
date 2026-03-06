@@ -13,6 +13,9 @@
 		onDelete?: () => void;
 		onAddSubClause?: () => void;
 		onFocus?: () => void;
+		onUnlock?: () => void;
+		onInteraction?: () => void;
+		disabled?: boolean;
 		canMoveUp?: boolean;
 		canMoveDown?: boolean;
 		showAddSubClause?: boolean;
@@ -30,6 +33,9 @@
 		onDelete,
 		onAddSubClause,
 		onFocus,
+		onUnlock,
+		onInteraction,
+		disabled = false,
 		canMoveUp = true,
 		canMoveDown = true,
 		showAddSubClause = false,
@@ -47,6 +53,7 @@
 	function handleInput() {
 		// Show suggestions only when typing at start of content (first ~30 chars, no comma yet)
 		showSuggestions = content.length > 0 && content.length < 30 && !content.includes(',');
+		onInteraction?.();
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
@@ -82,7 +89,9 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="flex flex-col gap-2" onclick={() => onInteraction?.()}>
 	<!-- Clause content row -->
 	<div class="flex gap-2 items-start">
 		<!-- Clause label (optional) -->
@@ -126,13 +135,20 @@
 			</span>
 		{/if}
 
+		{#if onUnlock}
+			<button type="button" class="btn btn-warning btn-xs gap-1" onclick={onUnlock}>
+				<i class="fa-solid fa-lock-open"></i>
+				{t.doneEditing}
+			</button>
+		{/if}
+
 		<div class="flex-1"></div>
 
 		<button
 			type="button"
 			class="btn btn-ghost btn-xs gap-1"
 			onclick={onMoveUp}
-			disabled={!canMoveUp}
+			disabled={disabled || !canMoveUp}
 		>
 			<i class="fa-solid fa-chevron-up"></i>
 			{t.resolutionMoveUp}
@@ -141,7 +157,7 @@
 			type="button"
 			class="btn btn-ghost btn-xs gap-1"
 			onclick={onMoveDown}
-			disabled={!canMoveDown}
+			disabled={disabled || !canMoveDown}
 		>
 			<i class="fa-solid fa-chevron-down"></i>
 			{t.resolutionMoveDown}

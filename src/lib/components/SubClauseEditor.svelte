@@ -26,6 +26,7 @@
 		parentSubClauseIndex?: number;
 		// Called when a nested subclause wants to outdent to parent level
 		onOutdentToParent?: (subClause: SubClause, afterParentIndex: number) => void;
+		disabled?: boolean;
 		labels?: Partial<ResolutionEditorLabels>;
 	}
 
@@ -36,6 +37,7 @@
 		onOutdentToOperative,
 		parentSubClauseIndex,
 		onOutdentToParent,
+		disabled = false,
 		labels = {}
 	}: Props = $props();
 
@@ -259,7 +261,7 @@
 												type="button"
 												class="btn btn-ghost btn-xs join-item px-1.5"
 												onclick={() => moveSubClause(subClauseIndex, 'up')}
-												disabled={subClauseIndex === 0}
+												disabled={disabled || subClauseIndex === 0}
 											>
 												<i class="fa-solid fa-chevron-up text-xs"></i>
 											</button>
@@ -269,7 +271,7 @@
 												type="button"
 												class="btn btn-ghost btn-xs join-item px-1.5"
 												onclick={() => moveSubClause(subClauseIndex, 'down')}
-												disabled={subClauseIndex === subClauses.length - 1}
+												disabled={disabled || subClauseIndex === subClauses.length - 1}
 											>
 												<i class="fa-solid fa-chevron-down text-xs"></i>
 											</button>
@@ -283,7 +285,7 @@
 												type="button"
 												class="btn btn-ghost btn-xs join-item px-1.5"
 												onclick={() => indentSubClause(subClauseIndex)}
-												disabled={subClauseIndex === 0 || depth >= MAX_SUBCLAUSE_DEPTH}
+												disabled={disabled || subClauseIndex === 0 || depth >= MAX_SUBCLAUSE_DEPTH}
 											>
 												<i class="fa-solid fa-indent text-xs"></i>
 											</button>
