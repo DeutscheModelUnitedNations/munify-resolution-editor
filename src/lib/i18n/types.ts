@@ -83,6 +83,18 @@ export interface ResolutionEditorLabels {
 	resolutionAuthoringDelegation: string;
 	resolutionDisclaimer: string;
 
+	// Locking
+	startEditing: string;
+	doneEditing: string;
+
+	// Amendments
+	amendmentProposed: string;
+	amendmentAdd: string;
+	amendmentDelete: string;
+	amendmentAlterText: string;
+	amendmentAlterPosition: string;
+	amendmentRejectedClause: string;
+
 	// Common
 	close: string;
 	cancel: string;

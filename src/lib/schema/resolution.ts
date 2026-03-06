@@ -131,6 +131,32 @@ export interface ResolutionHeaderData {
 }
 
 // =============================================================================
+// AMENDMENT OVERLAY TYPES
+// =============================================================================
+
+export type AmendmentOverlayType = 'DELETE' | 'ADD' | 'ALTER_TEXT' | 'ALTER_POSITION';
+export type AmendmentOverlayStatus =
+	| 'PENDING'
+	| 'SUBMITTED'
+	| 'CONSENSUS_ADOPTED'
+	| 'ACCEPTED'
+	| 'REJECTED'
+	| 'WITHDRAWN';
+
+export interface AmendmentOverlay {
+	id: string;
+	type: AmendmentOverlayType;
+	status: AmendmentOverlayStatus;
+	targetClauseId?: string;
+	targetOperativeIndex?: number;
+	targetPosition?: number;
+	newContent?: OperativeClause;
+	proposerName?: string;
+	sponsorCount?: number;
+	isOwnAmendment?: boolean;
+}
+
+// =============================================================================
 // ID GENERATORS
 // =============================================================================
 
@@ -513,4 +539,36 @@ export function appendNestedSubClause(parent: SubClause, child: SubClause): SubC
 			blocks: [...parent.blocks, createSubclausesBlock([child])]
 		};
 	}
+}
+
+// =============================================================================
+// AMENDMENT DIFF UTILITIES
+// =============================================================================
+
+/**
+ * Recursively count all text characters in a clause (including subclauses).
+ */
+export function getClauseTextCharCount(clause: OperativeClause | SubClause): number {
+	let count = 0;
+	for (const block of clause.blocks) {
+		if (block.type === 'text') {
+			count += block.content.length;
+		} else if (block.type === 'subclauses') {
+			for (const sub of block.items) {
+				count += getClauseTextCharCount(sub);
+			}
+		}
+	}
+	return count;
+}
+
+/**
+ * Calculate the diff size between an original clause and proposed new content.
+ * Used for ordering ALTER_TEXT amendments (larger diffs first).
+ */
+export function calculateAmendmentDiffSize(
+	originalClause: OperativeClause,
+	newContent: OperativeClause
+): number {
+	return Math.abs(getClauseTextCharCount(newContent) - getClauseTextCharCount(originalClause));
 }

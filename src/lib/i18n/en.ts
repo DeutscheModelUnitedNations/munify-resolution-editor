@@ -106,10 +106,22 @@ Example format:
 
 Text to format:`,
 
+	// Amendments
+	amendmentProposed: 'Amendment proposed',
+	amendmentAdd: 'Add clause',
+	amendmentDelete: 'Delete clause',
+	amendmentAlterText: 'Alter text',
+	amendmentAlterPosition: 'Alter position',
+	amendmentRejectedClause: 'Rejected',
+
 	// Preview metadata
 	resolutionAuthoringDelegation: 'Authoring Delegation',
 	resolutionDisclaimer:
 		'This document was created as part of a {conferenceName} simulation and has no legal validity.',
+
+	// Locking
+	startEditing: 'Start editing',
+	doneEditing: 'Done editing',
 
 	// Common
 	close: 'Close',

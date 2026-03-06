@@ -29,6 +29,9 @@ export {
 	type PreambleClause,
 	type Resolution,
 	type ResolutionHeaderData,
+	type AmendmentOverlay,
+	type AmendmentOverlayType,
+	type AmendmentOverlayStatus,
 	type LegacySubClause,
 	type LegacyOperativeClause,
 	type LegacyResolution,
@@ -72,7 +75,10 @@ export {
 	cleanupBlocks,
 	subClauseToOperativeClause,
 	findLastSubclausesBlockIndex,
-	appendNestedSubClause
+	appendNestedSubClause,
+	// Amendment diff utilities
+	getClauseTextCharCount,
+	calculateAmendmentDiffSize
 } from './schema/resolution';
 
 // Services

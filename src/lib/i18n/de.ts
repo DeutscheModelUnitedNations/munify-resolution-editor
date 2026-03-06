@@ -107,10 +107,22 @@ Beispielformat:
 
 Zu formatierender Text:`,
 
+	// Amendments
+	amendmentProposed: 'Änderungsantrag vorgeschlagen',
+	amendmentAdd: 'Klausel hinzufügen',
+	amendmentDelete: 'Klausel streichen',
+	amendmentAlterText: 'Text ändern',
+	amendmentAlterPosition: 'Position ändern',
+	amendmentRejectedClause: 'Abgelehnt',
+
 	// Preview metadata
 	resolutionAuthoringDelegation: 'Einreichende Delegation',
 	resolutionDisclaimer:
 		'Dieses Dokument wurde im Rahmen einer {conferenceName}-Simulation erstellt und besitzt keine rechtliche Gültigkeit.',
+
+	// Locking
+	startEditing: 'Bearbeitung starten',
+	doneEditing: 'Fertig',
 
 	// Common
 	close: 'Schließen',

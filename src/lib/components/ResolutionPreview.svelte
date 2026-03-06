@@ -2,9 +2,11 @@
 	import type { Snippet } from 'svelte';
 	import type {
 		Resolution,
+		PreambleClause,
 		SubClause,
 		OperativeClause,
-		ResolutionHeaderData
+		ResolutionHeaderData,
+		AmendmentOverlay
 	} from '../schema/resolution';
 	import { getSubClauseLabel, isClauseEmpty, migrateResolution } from '../schema/resolution';
 	import {
@@ -24,7 +26,14 @@
 		preamblePhrases?: string[];
 		operativePhrases?: string[];
 		labels?: Partial<ResolutionEditorLabels>;
+		// Amendment overlays
+		amendments?: AmendmentOverlay[];
+		rejectedClauseIds?: string[];
+		onAmendmentClick?: (amendmentId: string) => void;
 		// Extension points
+		afterPreambleClause?: Snippet<[{ clause: PreambleClause; index: number }]>;
+		afterOperativeClause?: Snippet<[{ clause: OperativeClause; index: number }]>;
+		betweenOperativeClauses?: Snippet<[{ index: number }]>;
 		previewHeader?: Snippet<[{ resolution: Resolution; headerData?: ResolutionHeaderData }]>;
 		previewFooter?: Snippet<[{ resolution: Resolution }]>;
 	}
@@ -37,6 +46,12 @@
 		preamblePhrases = [],
 		operativePhrases = [],
 		labels = {},
+		amendments = [],
+		rejectedClauseIds = [],
+		onAmendmentClick,
+		afterPreambleClause,
+		afterOperativeClause,
+		betweenOperativeClauses,
 		previewHeader,
 		previewFooter
 	}: Props = $props();
@@ -50,6 +65,31 @@
 	// Filter out empty clauses for preview
 	let nonEmptyPreamble = $derived(resolution.preamble.filter((c) => c.content.trim()));
 	let nonEmptyOperative = $derived(resolution.operative.filter((c) => !isClauseEmpty(c)));
+
+	// Amendment lookup maps
+	let amendmentsByClauseId = $derived(
+		amendments.reduce((map, a) => {
+			if (a.targetClauseId && a.type !== 'ADD') {
+				const existing = map.get(a.targetClauseId) ?? [];
+				existing.push(a);
+				map.set(a.targetClauseId, existing);
+			}
+			return map;
+		}, new Map<string, AmendmentOverlay[]>())
+	);
+
+	let addAmendmentsByPosition = $derived(
+		amendments.reduce((map, a) => {
+			if (a.type === 'ADD' && a.targetPosition !== undefined) {
+				const existing = map.get(a.targetPosition) ?? [];
+				existing.push(a);
+				map.set(a.targetPosition, existing);
+			}
+			return map;
+		}, new Map<number, AmendmentOverlay[]>())
+	);
+
+	let rejectedClauseIdSet = $derived(new Set(rejectedClauseIds));
 
 	// Use provided patterns or create from phrase arrays
 	let preamblePatterns = $derived(preamblePatternsInput ?? createPhrasePatterns(preamblePhrases));
@@ -105,7 +145,7 @@
 </script>
 
 <div
-	class="resolution-preview w-full max-w-[900px] px-16 py-8 bg-white text-gray-900 text-[0.95rem] leading-[1.7]"
+	class="resolution-preview w-full max-w-[900px] mx-auto px-16 py-8 bg-white text-gray-900 text-[0.95rem] leading-[1.7]"
 >
 	{#if previewHeader}
 		{@render previewHeader({ resolution, headerData })}
@@ -184,11 +224,14 @@
 	<!-- Preamble Section -->
 	{#if nonEmptyPreamble.length > 0}
 		<div class="mb-6">
-			{#each nonEmptyPreamble as clause (clause.id)}
+			{#each nonEmptyPreamble as clause, index (clause.id)}
 				{@const formatted = formatClauseContent(clause.content, preamblePatterns)}
 				<p class="mb-3 text-justify indent-8">
 					<span class="italic">{formatted.firstPhrase}</span>{formatted.rest},
 				</p>
+				{#if afterPreambleClause}
+					{@render afterPreambleClause({ clause, index })}
+				{/if}
 			{/each}
 		</div>
 	{/if}
@@ -198,13 +241,109 @@
 		<ol class="list-none p-0">
 			{#each nonEmptyOperative as clause, opIndex (clause.id)}
 				{@const isLastOperative = opIndex === nonEmptyOperative.length - 1}
-				<li class="mb-2 text-justify indent-8">
+				{@const isRejected = rejectedClauseIdSet.has(clause.id)}
+				{@const clauseAmendments = amendmentsByClauseId.get(clause.id) ?? []}
+				{@const hasDeleteAmendment = clauseAmendments.some((a) => a.type === 'DELETE')}
+				{@const alterTextAmendments = clauseAmendments.filter((a) => a.type === 'ALTER_TEXT')}
+				<!-- ADD amendments inserted before this clause (position = opIndex - 1 means "after previous") -->
+				{@const addAmendmentsBefore = opIndex === 0 ? (addAmendmentsByPosition.get(-1) ?? []) : []}
+				{#each addAmendmentsBefore as addAmendment (addAmendment.id)}
+					{@render addAmendmentMarker(addAmendment)}
+				{/each}
+				<li
+					class="mb-2 text-justify indent-8"
+					class:line-through={isRejected}
+					class:opacity-40={isRejected}
+				>
+					{#if clauseAmendments.length > 0}
+						<!-- Amendment type indicators -->
+						<span class="inline-flex gap-1 mr-1 text-xs align-middle">
+							{#each clauseAmendments as amendment (amendment.id)}
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<span
+									class="inline-flex items-center px-1.5 py-0.5 rounded text-white text-[0.65rem] leading-none cursor-pointer"
+									class:bg-error={amendment.type === 'DELETE'}
+									class:bg-warning={amendment.type === 'ALTER_TEXT'}
+									class:bg-info={amendment.type === 'ALTER_POSITION'}
+									onclick={() => onAmendmentClick?.(amendment.id)}
+								>
+									{#if amendment.type === 'DELETE'}
+										{t.amendmentDelete}
+									{:else if amendment.type === 'ALTER_TEXT'}
+										{t.amendmentAlterText}
+									{:else if amendment.type === 'ALTER_POSITION'}
+										{t.amendmentAlterPosition}
+									{/if}
+								</span>
+							{/each}
+						</span>
+					{/if}
 					<span class="font-bold">{opIndex + 1}.</span>
-					{@render operativeClauseBlocks(clause, opIndex, isLastOperative)}
+					{#if hasDeleteAmendment}
+						<span class="bg-error/10 line-through decoration-error">
+							{@render operativeClauseBlocks(clause, opIndex, isLastOperative)}
+						</span>
+					{:else}
+						{@render operativeClauseBlocks(clause, opIndex, isLastOperative)}
+					{/if}
 				</li>
+				<!-- ALTER_TEXT proposed replacements -->
+				{#each alterTextAmendments as altAmendment (altAmendment.id)}
+					{#if altAmendment.newContent}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<div
+							class="ml-8 mb-2 pl-3 border-l-4 border-success bg-success/10 rounded-r cursor-pointer"
+							onclick={() => onAmendmentClick?.(altAmendment.id)}
+						>
+							<div class="text-xs text-success font-semibold mb-1">
+								{t.amendmentAlterText}
+								{#if altAmendment.proposerName}
+									— {altAmendment.proposerName}
+								{/if}
+							</div>
+							<div class="text-justify">
+								{@render operativeClauseBlocks(altAmendment.newContent, opIndex, isLastOperative)}
+							</div>
+						</div>
+					{/if}
+				{/each}
+				{#if afterOperativeClause}
+					{@render afterOperativeClause({ clause, index: opIndex })}
+				{/if}
+				{#if betweenOperativeClauses}
+					{@render betweenOperativeClauses({ index: opIndex })}
+				{/if}
+				<!-- ADD amendments after this clause -->
+				{@const addAmendmentsAfter = addAmendmentsByPosition.get(opIndex) ?? []}
+				{#each addAmendmentsAfter as addAmendment (addAmendment.id)}
+					{@render addAmendmentMarker(addAmendment)}
+				{/each}
 			{/each}
 		</ol>
 	{/if}
+
+	{#snippet addAmendmentMarker(amendment: AmendmentOverlay)}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			class="ml-8 mb-2 pl-3 border-l-4 border-success bg-success/5 rounded-r py-1 cursor-pointer"
+			onclick={() => onAmendmentClick?.(amendment.id)}
+		>
+			<span class="text-xs text-success font-semibold">
+				+ {t.amendmentAdd}
+				{#if amendment.proposerName}
+					— {amendment.proposerName}
+				{/if}
+			</span>
+			{#if amendment.newContent}
+				<div class="text-justify mt-1 text-success/80">
+					{@render operativeClauseBlocks(amendment.newContent, 0, false)}
+				</div>
+			{/if}
+		</div>
+	{/snippet}
 
 	<!-- Render blocks of an operative clause -->
 	{#snippet operativeClauseBlocks(

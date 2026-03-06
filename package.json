@@ -3,34 +3,34 @@
 	"version": "0.1.0",
 	"description": "UN Resolution Editor component for MUNify applications",
 	"type": "module",
-	"svelte": "./dist/index.js",
+	"svelte": "./src/lib/index.ts",
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
-			"svelte": "./dist/index.js"
+			"svelte": "./src/lib/index.ts"
 		},
 		"./schema": {
 			"types": "./dist/schema/resolution.d.ts",
-			"default": "./dist/schema/resolution.js"
+			"default": "./src/lib/schema/resolution.ts"
 		},
 		"./phrases": {
 			"types": "./dist/phrases/index.d.ts",
-			"default": "./dist/phrases/index.js"
+			"default": "./src/lib/phrases/index.ts"
 		},
 		"./phrases/de": {
 			"types": "./dist/phrases/de.d.ts",
-			"default": "./dist/phrases/de.js"
+			"default": "./src/lib/phrases/de.ts"
 		},
 		"./i18n": {
 			"types": "./dist/i18n/index.d.ts",
-			"default": "./dist/i18n/index.js"
+			"default": "./src/lib/i18n/index.ts"
 		},
 		"./i18n/de": {
 			"types": "./dist/i18n/de.d.ts",
-			"default": "./dist/i18n/de.js"
+			"default": "./src/lib/i18n/de.ts"
 		},
-		"./tailwind.css": "./dist/tailwind.css"
+		"./tailwind.css": "./src/lib/tailwind.css"
 	},
 	"files": [
 		"dist",
