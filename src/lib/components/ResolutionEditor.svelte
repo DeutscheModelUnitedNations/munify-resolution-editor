@@ -459,7 +459,7 @@
 								{#if editableClauseIds?.has(clause.id)}
 									<button
 										type="button"
-										class="absolute top-1 right-1 z-10 btn btn-warning btn-xs gap-1"
+										class="absolute -top-3 right-1 z-10 btn btn-success btn-xs gap-1"
 										onclick={() => onClauseUnlock?.(clause.id)}
 									>
 										<i class="fa-solid fa-lock-open"></i>
@@ -582,7 +582,7 @@
 								{#if editableClauseIds?.has(clause.id)}
 									<button
 										type="button"
-										class="absolute top-1 right-1 z-10 btn btn-warning btn-xs gap-1"
+										class="absolute -top-3 right-1 z-10 btn btn-success btn-xs gap-1"
 										onclick={() => onClauseUnlock?.(clause.id)}
 									>
 										<i class="fa-solid fa-lock-open"></i>
