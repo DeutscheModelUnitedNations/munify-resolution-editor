@@ -12,25 +12,25 @@
 		},
 		"./schema": {
 			"types": "./dist/schema/resolution.d.ts",
-			"default": "./src/lib/schema/resolution.ts"
+			"default": "./dist/schema/resolution.js"
 		},
 		"./phrases": {
 			"types": "./dist/phrases/index.d.ts",
-			"default": "./src/lib/phrases/index.ts"
+			"default": "./dist/phrases/index.js"
 		},
 		"./phrases/de": {
 			"types": "./dist/phrases/de.d.ts",
-			"default": "./src/lib/phrases/de.ts"
+			"default": "./dist/phrases/de.js"
 		},
 		"./i18n": {
 			"types": "./dist/i18n/index.d.ts",
-			"default": "./src/lib/i18n/index.ts"
+			"default": "./dist/i18n/index.js"
 		},
 		"./i18n/de": {
 			"types": "./dist/i18n/de.d.ts",
-			"default": "./src/lib/i18n/de.ts"
+			"default": "./dist/i18n/de.js"
 		},
-		"./tailwind.css": "./src/lib/tailwind.css"
+		"./tailwind.css": "./dist/tailwind.css"
 	},
 	"files": [
 		"dist",
