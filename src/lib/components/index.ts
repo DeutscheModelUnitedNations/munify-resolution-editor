@@ -14,3 +14,4 @@ export { default as SubClauseEditor } from './SubClauseEditor.svelte';
 export { default as PhraseLookupModal } from './PhraseLookupModal.svelte';
 export { default as PhraseSuggestions } from './PhraseSuggestions.svelte';
 export { default as ImportModal } from './ImportModal.svelte';
+export { default as ResolutionPrintPreview } from './ResolutionPrintPreview.svelte';

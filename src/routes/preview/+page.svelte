@@ -1,6 +1,7 @@
 <script lang="ts">
 	import {
 		ResolutionPreview,
+		ResolutionPrintPreview,
 		ResolutionDocumentHeader,
 		ResolutionDocumentFooter
 	} from '$lib/components';
@@ -161,6 +162,7 @@
 	let showHeader = $state(true);
 	let useDefaultHeader = $state(true);
 	let customFooter = $state(false);
+	let showPrintPreview = $state(false);
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -188,9 +190,25 @@
 			<input type="checkbox" class="toggle toggle-accent" bind:checked={customFooter} />
 			<span class="label-text">Custom Footer Snippet</span>
 		</label>
+		<label class="label cursor-pointer gap-2">
+			<input type="checkbox" class="toggle toggle-info" bind:checked={showPrintPreview} />
+			<span class="label-text">Print Preview (Paged.js)</span>
+		</label>
 	</div>
 
-	<div class="bg-white text-black rounded-lg shadow-lg p-8 print:shadow-none">
+	{#if showPrintPreview}
+		<ResolutionPrintPreview
+			{resolution}
+			headerData={showHeader ? headerData : undefined}
+			{preamblePatterns}
+			{operativePatterns}
+		/>
+	{/if}
+
+	<div
+		class="bg-white text-black rounded-lg shadow-lg p-8 print:shadow-none"
+		class:hidden={showPrintPreview}
+	>
 		<ResolutionPreview
 			{resolution}
 			headerData={showHeader ? headerData : undefined}

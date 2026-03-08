@@ -157,9 +157,7 @@
 	// Skips the initial mount fire and prop-sync fires to avoid feedback loops
 	let initialized = false;
 	$effect(() => {
-		const snapshot = JSON.stringify(resolution);
-		// @ts-expect-error — snapshot is used to establish deep tracking
-		void snapshot;
+		JSON.stringify(resolution);
 		if (!initialized) {
 			initialized = true;
 			return;

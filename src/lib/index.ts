@@ -15,7 +15,8 @@ export {
 	SubClauseEditor,
 	PhraseLookupModal,
 	PhraseSuggestions,
-	ImportModal
+	ImportModal,
+	ResolutionPrintPreview
 } from './components';
 
 // Schema types and utilities
