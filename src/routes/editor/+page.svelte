@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { ResolutionEditor } from '$lib/components';
+	import { createNativeStore } from '$lib/store/native.svelte';
 	import { englishPreamblePhrases, englishOperativePhrases } from '$lib/phrases/en';
 	import type { Resolution, ResolutionHeaderData } from '$lib/schema/resolution';
 
 	// Sample resolution for demo
-	let resolution: Resolution = $state({
+	const initialResolution: Resolution = {
 		committeeName: 'General Assembly',
 		preamble: [
 			{
@@ -83,6 +84,13 @@
 				]
 			}
 		]
+	};
+
+	let _lastSnapshot: Resolution | null = $state(null);
+	const store = createNativeStore(initialResolution, {
+		onChange: (snap) => {
+			_lastSnapshot = snap;
+		}
 	});
 
 	// Sample header metadata for preview
@@ -96,13 +104,6 @@
 		topic: 'Climate Action and Sustainable Development',
 		authoringDelegation: 'United States of America'
 	};
-
-	let _lastChange: Resolution | null = $state(null);
-
-	function handleChange(updated: Resolution) {
-		_lastChange = updated;
-		resolution = updated;
-	}
 
 	function handleCopySuccess(phrase: string) {
 		console.log('Copied phrase:', phrase);
@@ -127,13 +128,11 @@
 	<div class="grid lg:grid-cols-3 gap-6">
 		<div class="lg:col-span-2">
 			<ResolutionEditor
-				committeeName="General Assembly"
-				{resolution}
+				{store}
 				{headerData}
 				editable={true}
 				preamblePhrases={englishPreamblePhrases}
 				operativePhrases={englishOperativePhrases}
-				onResolutionChange={handleChange}
 				onCopySuccess={handleCopySuccess}
 				onCopyError={handleCopyError}
 			/>
@@ -195,7 +194,7 @@
 						Resolution JSON
 					</h2>
 					<div class="mockup-code text-xs max-h-64 overflow-y-auto">
-						<pre><code>{JSON.stringify(resolution, null, 2)}</code></pre>
+						<pre><code>{JSON.stringify(store.snapshot, null, 2)}</code></pre>
 					</div>
 				</div>
 			</div>

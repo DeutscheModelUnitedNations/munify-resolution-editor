@@ -120,10 +120,6 @@ Text to format:`,
 	resolutionDisclaimer:
 		'This document was created as part of a {conferenceName} simulation and has no legal validity.',
 
-	// Locking
-	startEditing: 'Start editing',
-	doneEditing: 'Done editing',
-
 	// Common
 	close: 'Close',
 	cancel: 'Cancel',

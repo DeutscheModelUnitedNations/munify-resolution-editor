@@ -4,6 +4,21 @@
  * A Svelte 5 component library for creating and editing UN-style resolutions.
  */
 
+// Store
+export type {
+	ResolutionStore,
+	TextHandle,
+	TextLocation,
+	ClausePath,
+	SubclausesBlockPath,
+	OutdentResult,
+	PresenceUser,
+	PresenceInfo,
+	PresenceAdapter
+} from './store/types';
+export { createNativeStore, createEmptyNativeStore } from './store/native.svelte';
+export type { NativeStoreOptions } from './store/native.svelte';
+
 // Main components
 export {
 	ResolutionEditor,

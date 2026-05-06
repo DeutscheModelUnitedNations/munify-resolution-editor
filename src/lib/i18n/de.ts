@@ -121,10 +121,6 @@ Zu formatierender Text:`,
 	resolutionDisclaimer:
 		'Dieses Dokument wurde im Rahmen einer {conferenceName}-Simulation erstellt und besitzt keine rechtliche Gültigkeit.',
 
-	// Locking
-	startEditing: 'Bearbeitung starten',
-	doneEditing: 'Fertig',
-
 	// Common
 	close: 'Schließen',
 	cancel: 'Abbrechen',

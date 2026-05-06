@@ -1,127 +1,69 @@
 <script lang="ts">
-	import {
-		type OperativeClause,
-		type ClauseBlock,
-		type SubClause,
-		createTextBlock,
-		createSubclausesBlock,
-		createEmptySubClause
-	} from '../schema/resolution';
+	import { type OperativeClause, getFirstTextContent } from '../schema/resolution';
 	import type { PhrasePattern } from '../services/phraseValidation';
 	import type { ResolutionEditorLabels } from '../i18n/types';
+	import type { ResolutionStore } from '../store/types';
 	import { englishLabels } from '../i18n/en';
 	import SubClauseEditor from './SubClauseEditor.svelte';
 	import PhraseSuggestions from './PhraseSuggestions.svelte';
 
 	interface Props {
+		store: ResolutionStore;
 		clause: OperativeClause;
 		index: number;
-		onUpdate: (clause: OperativeClause) => void;
 		onMoveUp?: () => void;
 		onMoveDown?: () => void;
 		onDelete?: () => void;
 		onFocus?: () => void;
 		onInteraction?: () => void;
 		disabled?: boolean;
-		active?: boolean;
 		canMoveUp?: boolean;
 		canMoveDown?: boolean;
 		validationError?: string;
 		patterns?: PhrasePattern[];
-		// Called when a depth-1 subclause wants to outdent to become a new operative clause
-		onOutdentToOperative?: (newOperative: OperativeClause) => void;
 		labels?: Partial<ResolutionEditorLabels>;
 	}
 
 	let {
+		store,
 		clause,
 		index,
-		onUpdate,
 		onMoveUp,
 		onMoveDown,
 		onDelete,
 		onFocus,
 		onInteraction,
 		disabled = false,
-		active = false,
 		canMoveUp = true,
 		canMoveDown = true,
 		validationError,
 		patterns = [],
-		onOutdentToOperative,
 		labels = {}
 	}: Props = $props();
 
-	// Merge labels with defaults
-	const t = { ...englishLabels, ...labels };
+	const t = $derived({ ...englishLabels, ...labels });
 
 	let showSuggestions = $state(false);
 	let suggestionComponent: PhraseSuggestions | undefined = $state();
 
-	// Get first text block content for suggestions
-	let firstTextContent = $derived(
-		clause.blocks[0]?.type === 'text' ? clause.blocks[0].content : ''
-	);
+	const firstTextContent = $derived(getFirstTextContent(clause));
+	const firstTextBlockId = $derived(clause.blocks[0]?.type === 'text' ? clause.blocks[0].id : null);
+	const hasSubclausesBlock = $derived(clause.blocks.some((b) => b.type === 'subclauses'));
 
-	// Update a specific block's content
-	function updateBlockContent(blockIndex: number, content: string) {
-		const block = clause.blocks[blockIndex];
-		if (block.type === 'text') {
-			const newBlocks = [...clause.blocks];
-			newBlocks[blockIndex] = { ...block, content };
-			onUpdate({ ...clause, blocks: newBlocks });
-		}
-	}
-
-	// Update subclauses in a subclauses block
-	function updateSubClauses(blockIndex: number, items: SubClause[]) {
-		const block = clause.blocks[blockIndex];
-		if (block.type === 'subclauses') {
-			const newBlocks = [...clause.blocks];
-			if (items.length > 0) {
-				newBlocks[blockIndex] = { ...block, items };
-			} else {
-				// Remove empty subclauses block
-				newBlocks.splice(blockIndex, 1);
-			}
-			onUpdate({ ...clause, blocks: newBlocks });
-		}
-	}
-
-	// Add a subclauses block with initial subclause
 	function addSubClausesBlock() {
-		const newBlocks: ClauseBlock[] = [
-			...clause.blocks,
-			createSubclausesBlock([createEmptySubClause()])
-		];
-		onUpdate({ ...clause, blocks: newBlocks });
+		store.appendSubclausesBlock({ kind: 'operative', clauseId: clause.id });
 	}
 
-	// Add a continuation text block after a specific block
-	function addContinuationText(afterBlockIndex: number) {
-		const newBlocks = [...clause.blocks];
-		newBlocks.splice(afterBlockIndex + 1, 0, createTextBlock());
-		onUpdate({ ...clause, blocks: newBlocks });
+	function addContinuationText() {
+		store.appendTextBlock({ kind: 'operative', clauseId: clause.id });
 	}
 
-	// Delete a block (can't delete first text block)
-	function deleteBlock(blockIndex: number) {
-		if (blockIndex === 0) return;
-		const newBlocks = clause.blocks.filter((_, i) => i !== blockIndex);
-		onUpdate({ ...clause, blocks: newBlocks });
+	function deleteBlock(blockId: string) {
+		store.deleteBlock({ kind: 'operative', clauseId: clause.id }, blockId);
 	}
 
-	// Check if clause has any subclauses blocks
-	function hasSubclausesBlock(): boolean {
-		return clause.blocks.some((b) => b.type === 'subclauses');
-	}
-
-	// Suggestion handling for first text block
-	function handleInput(blockIndex: number, content: string) {
-		updateBlockContent(blockIndex, content);
-		if (blockIndex === 0) {
-			showSuggestions = content.length > 0 && content.length < 30 && !content.includes(',');
-		}
+	function handleFirstInput(content: string) {
+		showSuggestions = content.length > 0 && content.length < 30 && !content.includes(',');
 		onInteraction?.();
 	}
 
@@ -131,13 +73,10 @@
 		}
 	}
 
-	function handleFocus(blockIndex: number) {
-		if (blockIndex === 0) {
-			onFocus?.();
-			const content = firstTextContent;
-			if (patterns.length > 0 && content.length > 0 && content.length < 30) {
-				showSuggestions = true;
-			}
+	function handleFirstFocus() {
+		onFocus?.();
+		if (patterns.length > 0 && firstTextContent.length > 0 && firstTextContent.length < 30) {
+			showSuggestions = true;
 		}
 	}
 
@@ -148,13 +87,11 @@
 	}
 
 	function selectSuggestion(phrase: string) {
-		const firstBlock = clause.blocks[0];
-		if (firstBlock?.type === 'text') {
-			const content = firstBlock.content;
-			const commaIndex = content.indexOf(',');
-			const newContent = commaIndex > -1 ? phrase + content.slice(commaIndex) : phrase;
-			updateBlockContent(0, newContent);
-		}
+		if (!firstTextBlockId) return;
+		const content = firstTextContent;
+		const commaIndex = content.indexOf(',');
+		const newContent = commaIndex > -1 ? phrase + content.slice(commaIndex) : phrase;
+		store.updateTextBlock({ kind: 'operative', clauseId: clause.id }, firstTextBlockId, newContent);
 		showSuggestions = false;
 	}
 </script>
@@ -164,9 +101,12 @@
 <div class="bg-base-100 rounded-lg p-3 border border-base-300" onclick={() => onInteraction?.()}>
 	{#each clause.blocks as block, blockIndex (block.id)}
 		{#if block.type === 'text'}
-			<!-- Text block -->
+			{@const handle = store.getTextHandle({
+				kind: 'operative-text',
+				clauseId: clause.id,
+				blockId: block.id
+			})}
 			<div class="flex gap-2 items-start" class:mt-3={blockIndex > 0}>
-				<!-- Label only for first text block -->
 				{#if blockIndex === 0}
 					<span class="text-sm font-medium text-base-content/70 min-w-8 pt-2">
 						{index + 1}.
@@ -177,18 +117,18 @@
 
 				<div class="relative flex-1">
 					<textarea
-						value={block.content}
-						oninput={(e) => handleInput(blockIndex, e.currentTarget.value)}
+						{@attach (el) => handle.bindTextarea(el)}
+						oninput={(e) =>
+							blockIndex === 0 ? handleFirstInput(e.currentTarget.value) : undefined}
 						placeholder={blockIndex === 0
 							? t.resolutionOperativePlaceholder
 							: t.resolutionContinuationPlaceholder}
-						class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed"
-						class:bg-base-200={!active}
-						class:bg-base-100={active}
+						class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed bg-base-100"
 						class:textarea-warning={blockIndex === 0 && validationError}
 						rows="2"
+						{disabled}
 						onkeydown={blockIndex === 0 ? handleKeyDown : undefined}
-						onfocus={() => handleFocus(blockIndex)}
+						onfocus={blockIndex === 0 ? handleFirstFocus : undefined}
 						onblur={blockIndex === 0 ? handleBlur : undefined}
 					></textarea>
 
@@ -205,14 +145,13 @@
 				</div>
 			</div>
 
-			<!-- Block action row for continuation text blocks -->
 			{#if blockIndex > 0}
 				<div class="flex flex-wrap gap-1 ml-10 mt-1">
 					<div class="flex-1"></div>
 					<button
 						type="button"
 						class="btn btn-ghost btn-xs gap-1 text-error"
-						onclick={() => deleteBlock(blockIndex)}
+						onclick={() => deleteBlock(block.id)}
 					>
 						<i class="fa-solid fa-trash"></i>
 						{t.resolutionDeleteBlock}
@@ -220,22 +159,20 @@
 				</div>
 			{/if}
 		{:else if block.type === 'subclauses'}
-			<!-- Subclauses block -->
 			<div class="mt-3 pt-3 border-t border-base-200">
 				<SubClauseEditor
+					{store}
+					path={{ kind: 'operative', clauseId: clause.id }}
 					subClauses={block.items}
 					depth={1}
-					onUpdate={(items) => updateSubClauses(blockIndex, items)}
-					{onOutdentToOperative}
-					{active}
+					{disabled}
 					{labels}
 				/>
-				<!-- Add continuation text after subclauses -->
 				<div class="mt-2 flex gap-1 ml-4">
 					<button
 						type="button"
 						class="btn btn-ghost btn-xs gap-1 text-primary"
-						onclick={() => addContinuationText(blockIndex)}
+						onclick={addContinuationText}
 					>
 						<i class="fa-solid fa-paragraph"></i>
 						{t.resolutionAddContinuation}
@@ -245,7 +182,6 @@
 		{/if}
 	{/each}
 
-	<!-- Main clause action buttons -->
 	<div class="flex flex-wrap gap-1 {clause.blocks[0]?.type === 'text' ? 'ml-10' : ''} mt-2">
 		{#if validationError}
 			<span class="badge badge-warning badge-sm gap-1">
@@ -274,7 +210,7 @@
 			<i class="fa-solid fa-chevron-down"></i>
 			{t.resolutionMoveDown}
 		</button>
-		{#if !hasSubclausesBlock()}
+		{#if !hasSubclausesBlock}
 			<button
 				type="button"
 				class="btn btn-ghost btn-xs gap-1 text-primary"

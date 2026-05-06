@@ -1,6 +1,6 @@
 {
 	"name": "@deutschemodelunitednations/munify-resolution-editor",
-	"version": "0.1.0",
+	"version": "0.2.0-rc1",
 	"description": "UN Resolution Editor component for MUNify applications",
 	"type": "module",
 	"svelte": "./dist/index.js",
@@ -10,6 +10,11 @@
 			"types": "./dist/index.d.ts",
 			"svelte": "./dist/index.js",
 			"default": "./dist/index.js"
+		},
+		"./yjs": {
+			"types": "./dist/yjs/index.d.ts",
+			"svelte": "./dist/yjs/index.js",
+			"default": "./dist/yjs/index.js"
 		},
 		"./schema": {
 			"types": "./dist/schema/resolution.d.ts",
@@ -54,7 +59,17 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"peerDependencies": {
-		"svelte": "^5.0.0"
+		"svelte": "^5.0.0",
+		"yjs": "^13.6.0",
+		"y-protocols": "^1.0.0"
+	},
+	"peerDependenciesMeta": {
+		"yjs": {
+			"optional": true
+		},
+		"y-protocols": {
+			"optional": true
+		}
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.8",
@@ -80,7 +95,9 @@
 		"typescript": "^5.7.3",
 		"typescript-eslint": "^8.20.0",
 		"vite": "^6.0.7",
-		"vitest": "^3.0.4"
+		"vitest": "^3.0.4",
+		"y-protocols": "^1.0.7",
+		"yjs": "^13.6.30"
 	},
 	"dependencies": {
 		"zod": "^3.24.1",
