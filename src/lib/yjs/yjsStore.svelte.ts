@@ -1,10 +1,21 @@
 /**
  * Y.js-backed implementation of `ResolutionStore`.
  *
- * The Y.Doc is canonical; this store maintains a reactive plain-JSON
- * mirror via `observeDeep` so editor components rendering off
- * `store.snapshot` stay current. Every mutator is wrapped in a Y
- * transaction so observers see one coherent change per call.
+ * The Y.Doc is canonical. This store maintains a reactive plain-JSON
+ * mirror that updates via two paths:
+ *
+ *   1. Text changes (Y.Text events) → granular `snapshot.path.to.content`
+ *      assignment. Does NOT rebuild parent arrays, so editor components
+ *      and their `{@attach}` bindings don't churn on remote keystrokes.
+ *
+ *   2. Structural changes (Y.Array insert/delete/reorder, Y.Map key set)
+ *      → rebuild the affected branch (preamble/operative) from the
+ *      Y.Doc. The keyed `{#each}` reuses children by id, so existing
+ *      editors keep their textarea bindings on the same Y.Text.
+ *
+ * `getTextHandle` memoizes per-locator so repeated calls with the same
+ * id return the same handle reference; this lets `{@attach}` see prop
+ * stability and avoid teardown-rebind on every refresh.
  *
  * Per-clause `Y.Text` enables real character-level co-typing: the
  * `TextHandle` returned by `getTextHandle` installs a CRDT binding
@@ -12,6 +23,7 @@
  * inserts/deletes.
  */
 
+import { SvelteMap } from 'svelte/reactivity';
 import * as Y from 'yjs';
 import {
 	type Resolution,
@@ -51,22 +63,71 @@ export interface YjsStoreOptions {
 export function createYjsStore(yDoc: Y.Doc, opts: YjsStoreOptions = {}): ResolutionStore {
 	if (opts.seed) jsonToYDoc(yDoc, opts.seed);
 
-	// Reactive mirror of the Y.Doc as plain JSON.
 	const snapshot = $state<Resolution>(yDocToJson(yDoc));
 
-	const refresh = () => {
-		const next = yDocToJson(yDoc);
-		// Mutate in place so `$state` proxies stay stable for components
-		// that have captured references (e.g. `each` blocks).
-		snapshot.committeeName = next.committeeName;
-		snapshot.preamble.length = 0;
-		snapshot.preamble.push(...next.preamble);
-		snapshot.operative.length = 0;
-		snapshot.operative.push(...next.operative);
+	// Walk the doc tree on every mutation. Classify events into
+	// granular-text vs structural-rebuild so we only rebuild branches
+	// that actually had structural changes.
+	const onDeepEvents = (events: Y.YEvent<Y.AbstractType<unknown>>[]) => {
+		let rootStructural = false;
+		let preambleStructural = false;
+		let operativeStructural = false;
+		const textEvents: { path: ReadonlyArray<string | number>; text: string }[] = [];
+
+		for (const event of events) {
+			const path = event.path;
+			if (event.target instanceof Y.Text) {
+				textEvents.push({ path, text: event.target.toString() });
+				continue;
+			}
+			// Y.Array delta or Y.Map keys change → structural for that branch.
+			if (path.length === 0) {
+				rootStructural = true;
+			} else if (path[0] === 'preamble') {
+				preambleStructural = true;
+			} else if (path[0] === 'operative') {
+				operativeStructural = true;
+			}
+		}
+
+		// Structural rebuilds wipe their branches; do these first.
+		if (rootStructural) {
+			const fresh = yDocToJson(yDoc);
+			snapshot.committeeName = fresh.committeeName;
+			snapshot.preamble = fresh.preamble;
+			snapshot.operative = fresh.operative;
+		} else {
+			if (preambleStructural) snapshot.preamble = yDocToJson(yDoc).preamble;
+			if (operativeStructural) snapshot.operative = yDocToJson(yDoc).operative;
+		}
+
+		// Granular text updates for branches that weren't rebuilt.
+		for (const { path, text } of textEvents) {
+			if (rootStructural) continue;
+			if (path.length === 0) continue;
+			const top = path[0];
+			if (top === 'preamble' && preambleStructural) continue;
+			if (top === 'operative' && operativeStructural) continue;
+			applySnapshotText(path, text);
+		}
 	};
 
-	const onUpdate = () => refresh();
-	yDoc.on('update', onUpdate);
+	function applySnapshotText(path: ReadonlyArray<string | number>, newText: string) {
+		if (path.length === 1) {
+			if (path[0] === 'committeeName') snapshot.committeeName = newText;
+			return;
+		}
+		let node: unknown = snapshot;
+		for (let i = 0; i < path.length - 1; i++) {
+			if (node == null || typeof node !== 'object') return;
+			node = (node as Record<string | number, unknown>)[path[i]];
+		}
+		if (node == null || typeof node !== 'object') return;
+		const last = path[path.length - 1];
+		(node as Record<string | number, unknown>)[last] = newText;
+	}
+
+	yDoc.getMap<unknown>(ROOT_KEY).observeDeep(onDeepEvents);
 
 	// ===================================================================
 	// Internal Y lookups
@@ -644,8 +705,28 @@ export function createYjsStore(yDoc: Y.Doc, opts: YjsStoreOptions = {}): Resolut
 		}
 	}
 
+	// Memoize handles per locator so consumers passing
+	// `handle={store.getTextHandle({...})}` inline get a stable reference
+	// across renders. `{@attach}` and prop diffing both compare by
+	// identity, so unstable handles caused teardown-rebind on every
+	// remote keystroke before this.
+	const handleCache = new SvelteMap<string, TextHandle>();
+	function locatorKey(loc: TextLocation): string {
+		switch (loc.kind) {
+			case 'preamble':
+				return `p:${loc.clauseId}`;
+			case 'operative-text':
+				return `o:${loc.clauseId}:${loc.blockId}`;
+			case 'subclause-text':
+				return `s:${loc.subClauseId}:${loc.blockId}`;
+		}
+	}
+
 	function getTextHandle(loc: TextLocation): TextHandle {
-		return {
+		const key = locatorKey(loc);
+		const cached = handleCache.get(key);
+		if (cached) return cached;
+		const handle: TextHandle = {
 			get() {
 				// Read from the reactive snapshot so component effects re-run.
 				switch (loc.kind) {
@@ -703,10 +784,13 @@ export function createYjsStore(yDoc: Y.Doc, opts: YjsStoreOptions = {}): Resolut
 				return bindYTextToTextarea(yText, el);
 			}
 		};
+		handleCache.set(key, handle);
+		return handle;
 	}
 
 	function destroy() {
-		yDoc.off('update', onUpdate);
+		yDoc.getMap<unknown>(ROOT_KEY).unobserveDeep(onDeepEvents);
+		handleCache.clear();
 	}
 
 	return {

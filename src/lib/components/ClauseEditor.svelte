@@ -45,17 +45,8 @@
 
 	const t = $derived({ ...englishLabels, ...labels });
 
-	let textareaEl: HTMLTextAreaElement | null = $state(null);
 	let showSuggestions = $state(false);
 	let suggestionComponent: PhraseSuggestions | undefined = $state();
-
-	// Bind the text handle to the textarea. The handle does double-duty —
-	// the native impl wires value/oninput, the Yjs impl installs a CRDT
-	// binding with cursor preservation.
-	$effect(() => {
-		if (!textareaEl) return;
-		return handle.bindTextarea(textareaEl);
-	});
 
 	// Reactive read of the current value for suggestions and validation UI.
 	const currentValue = $derived(handle.get());
@@ -106,7 +97,7 @@
 
 		<div class="relative flex-1">
 			<textarea
-				bind:this={textareaEl}
+				{@attach (el) => handle.bindTextarea(el as HTMLTextAreaElement)}
 				{placeholder}
 				class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed bg-base-100"
 				class:textarea-warning={validationError}

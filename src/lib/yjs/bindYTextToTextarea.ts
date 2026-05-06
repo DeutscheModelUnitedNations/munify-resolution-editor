@@ -20,8 +20,11 @@ export function bindYTextToTextarea(yText: Y.Text, el: HTMLTextAreaElement): () 
 	el.value = lastValue;
 
 	const onYChange = (_event: Y.YTextEvent, transaction: Y.Transaction) => {
-		// Ignore our own local edits; only react to remote/server transactions.
-		if (transaction.local && !transaction.origin) return;
+		// Ignore our own UI-originated edits — the textarea already has the value.
+		// All other origins (remote provider, server-side mutations, programmatic
+		// `local` mutations from other locations on this client) should refresh
+		// the visible textarea.
+		if (transaction.origin === 'ui') return;
 
 		const next = yText.toString();
 		if (next === el.value) {
