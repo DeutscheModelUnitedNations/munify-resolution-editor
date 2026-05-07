@@ -100,11 +100,13 @@
 
 	let lastFocusedPreambleId = $state<string | null>(null);
 	let lastFocusedOperativeId = $state<string | null>(null);
+	let lastFocusedId = $state<string | null>(null);
 
 	// Push local focus into the presence adapter so remote peers see it.
+	// Use a single most-recently-focused id rather than preferring preamble —
+	// otherwise focusing an operative clause never overrides a stale preamble id.
 	$effect(() => {
-		const focusedId = lastFocusedPreambleId ?? lastFocusedOperativeId ?? undefined;
-		presence?.setFocus(focusedId);
+		presence?.setFocus(lastFocusedId ?? undefined);
 	});
 
 	// Validation
@@ -266,7 +268,10 @@
 									onMoveUp={() => store.movePreambleClause(clause.id, 'up')}
 									onMoveDown={() => store.movePreambleClause(clause.id, 'down')}
 									onDelete={() => store.deletePreambleClause(clause.id)}
-									onFocus={() => (lastFocusedPreambleId = clause.id)}
+									onFocus={() => {
+										lastFocusedPreambleId = clause.id;
+										lastFocusedId = clause.id;
+									}}
 									validationError={!preambleValidation[index]?.valid
 										? t.resolutionUnknownPhrase
 										: undefined}
@@ -359,7 +364,10 @@
 									onMoveUp={() => store.moveOperativeClause(clause.id, 'up')}
 									onMoveDown={() => store.moveOperativeClause(clause.id, 'down')}
 									onDelete={() => store.deleteOperativeClause(clause.id)}
-									onFocus={() => (lastFocusedOperativeId = clause.id)}
+									onFocus={() => {
+										lastFocusedOperativeId = clause.id;
+										lastFocusedId = clause.id;
+									}}
 									validationError={!operativeValidation[index]?.valid
 										? t.resolutionUnknownPhrase
 										: undefined}
