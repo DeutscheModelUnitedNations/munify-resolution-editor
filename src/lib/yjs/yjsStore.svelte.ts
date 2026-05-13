@@ -23,7 +23,6 @@
  * inserts/deletes.
  */
 
-import { SvelteMap } from 'svelte/reactivity';
 import * as Y from 'yjs';
 import {
 	type Resolution,
@@ -710,7 +709,14 @@ export function createYjsStore(yDoc: Y.Doc, opts: YjsStoreOptions = {}): Resolut
 	// across renders. `{@attach}` and prop diffing both compare by
 	// identity, so unstable handles caused teardown-rebind on every
 	// remote keystroke before this.
-	const handleCache = new SvelteMap<string, TextHandle>();
+	// Plain Map — this cache is store-internal and must NOT be reactive.
+	// `getTextHandle()` is called from template expressions
+	// (`handle={store.getTextHandle({...})}`) which Svelte treats as a
+	// `$derived` context. A SvelteMap.set() there throws
+	// `state_unsafe_mutation`, abandoning the call before the handle is
+	// returned — leaving textareas unbound on first mount.
+	// eslint-disable-next-line svelte/prefer-svelte-reactivity
+	const handleCache = new Map<string, TextHandle>();
 	function locatorKey(loc: TextLocation): string {
 		switch (loc.kind) {
 			case 'preamble':
