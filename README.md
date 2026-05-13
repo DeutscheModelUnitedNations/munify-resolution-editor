@@ -4,44 +4,38 @@ A Svelte 5 component library for creating and editing UN-style resolutions. Buil
 
 ## Features
 
-- **Full Resolution Editor**: Complete editing experience for UN resolutions with preamble and operative clauses
-- **Block-based Structure**: Support for nested subclauses up to 4 levels deep
-- **Phrase Validation**: Validate clause openings against official UN resolution vocabulary
-- **Phrase Suggestions**: Inline autocomplete for common resolution phrases
-- **Import from Text**: Parse plain text or LLM-formatted resolutions
-- **Preview Mode**: Render resolutions in official UN document format
-- **Fully Customizable**: i18n support, custom phrases, and snippet-based extension points
-- **Type-safe**: Full TypeScript support with Zod schema validation
+- **Store-based architecture** — editor components consume a `ResolutionStore` interface; swap between local-only JSON and Y.js-backed real-time collaboration without changing the UI
+- **Full Resolution Editor** — preamble + operative clauses, recursive sub-clauses up to 4 levels
+- **Real-time co-editing** (optional) — character-level collaborative typing via the `/yjs` subpath, including cursor-preserving CRDT bindings and remote-user awareness
+- **Phrase Validation & Suggestions** — validate clause openings against UN vocabulary, inline autocomplete
+- **Import from Text** — parse plain text or LLM-formatted resolutions
+- **Preview & Print** — official UN document format, page-broken via `pagedjs`
+- **Customizable** — i18n, custom phrases, snippet extension points
+- **Type-safe** — full TypeScript + Zod schema validation
 
 ## Installation
 
 ```bash
-# Using bun
 bun add -d @deutschemodelunitednations/munify-resolution-editor
-
-# Using npm
-npm install -D @deutschemodelunitednations/munify-resolution-editor
-
-# Using pnpm
-pnpm add -D @deutschemodelunitednations/munify-resolution-editor
 ```
 
-> **Note**: Svelte component libraries should be installed as `devDependencies` (`-d` / `-D` flag). SvelteKit bundles components at build time, so they don't need to be runtime dependencies.
+> **Note**: install as a dev dependency — SvelteKit bundles components at build time.
 
 ## Peer Dependencies
 
-This library requires:
+| Peer            | Required for        | Optional? |
+| --------------- | ------------------- | --------- |
+| `svelte ^5.0.0` | always              | no        |
+| `yjs ^13.6.0`   | `/yjs` subpath only | yes       |
+| `y-protocols`   | `/yjs` subpath only | yes       |
 
-- `svelte` ^5.0.0
-- TailwindCSS and DaisyUI configured in your project (for styling)
+If you only use the native (JSON) store you do **not** need to install `yjs` / `y-protocols`.
 
 ## Styling Setup
 
-This library uses TailwindCSS utility classes for styling. Since the components are distributed as Svelte files, you need to configure your project's Tailwind to scan the library's components. This is the [standard approach for Tailwind-based component libraries](https://tailwindcss.com/docs/detecting-classes-in-source-files).
+The library uses Tailwind CSS utilities. Tailwind needs to scan the library's components.
 
-### Tailwind CSS v4 (Recommended)
-
-**Option 1: Import the helper CSS file** (simplest)
+### Tailwind v4 (recommended)
 
 ```css
 @import 'tailwindcss';
@@ -49,82 +43,162 @@ This library uses TailwindCSS utility classes for styling. Since the components 
 @plugin "daisyui";
 ```
 
-**Option 2: Add the `@source` directive manually**
+### Tailwind v3
 
-```css
-@import 'tailwindcss';
-@source "../node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte";
-@plugin "daisyui";
-```
-
-### Tailwind CSS v3
-
-Add the library to your `content` array in `tailwind.config.js`:
-
-```javascript
+```js
 export default {
 	content: [
 		'./src/**/*.{html,js,svelte,ts}',
 		'./node_modules/@deutschemodelunitednations/munify-resolution-editor/dist/**/*.svelte'
 	]
-	// ... rest of config
 };
 ```
 
-### Why is this needed?
+---
 
-Tailwind CSS generates only the CSS for utility classes that are actually used in your project. By default, it ignores `node_modules` since most packages don't use Tailwind. This library ships Svelte components that use Tailwind utilities, so Tailwind needs to scan them to generate the necessary styles.
+## Architecture
 
-> **Note**: This is different from libraries like daisyUI, which are Tailwind _plugins_ that generate CSS programmatically. Our library is a _component library_ that uses Tailwind utilities in its templates.
+The editor is **UI-only**. Persistence and collaboration are concerns of the application that hosts it. Two store implementations bridge that gap:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│   <ResolutionEditor store={...} presence={...} … />          │
+│   ClauseEditor / OperativeClauseEditor / SubClauseEditor     │
+│   (read store.snapshot, call store.addPreambleClause(), …)   │
+└────────────────────────┬─────────────────────────────────────┘
+                         │ ResolutionStore interface
+            ┌────────────┴────────────┐
+            ▼                         ▼
+   createNativeStore           createYjsStore
+   ─────────────────           ────────────────
+   plain $state<Resolution>    Y.Doc + Y.Map + per-clause Y.Text
+   onChange(snapshot)           Y.transact() on every mutator
+   no peers                     awareness presence adapter
+```
+
+A `ResolutionStore` exposes:
+
+- `snapshot: Resolution` — reactive Svelte 5 `$state` value
+- typed mutators (`addPreambleClause`, `updateTextBlock`, `indentSubClause`, …)
+- `getTextHandle(loc)` — returns a `TextHandle` whose `bindTextarea(el)` is a no-op for the native store and a CRDT binding for the Y.js store
+- `replaceResolution(next)` — bulk replace, preserving clause ids where possible
+- `destroy()` — release subscriptions
+
+### When to use which store
+
+| Use case                                               | Store                                                   |
+| ------------------------------------------------------ | ------------------------------------------------------- |
+| Single-user editor, save-on-blur to your DB            | `createNativeStore`                                     |
+| Inline mini-editor in a modal (e.g. amendment compose) | `createNativeStore`                                     |
+| Live multi-user co-editing of a working paper          | `createYjsStore`                                        |
+| Server-side mutations against a paper's canonical doc  | `createYjsStore` (against the same `Y.Doc` you persist) |
+
+---
 
 ## Usage
 
-### Basic Editor
+### Native (single-user)
 
 ```svelte
 <script lang="ts">
-	import { ResolutionEditor } from '@deutschemodelunitednations/munify-resolution-editor';
+	import {
+		ResolutionEditor,
+		createNativeStore,
+		createEmptyResolution,
+		type Resolution
+	} from '@deutschemodelunitednations/munify-resolution-editor';
+	import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
 	import {
 		germanPreamblePhrases,
 		germanOperativePhrases
 	} from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
-	import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
-	import type { Resolution } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 
-	let resolution: Resolution = $state({
-		committeeName: 'General Assembly',
-		preamble: [],
-		operative: []
+	let { initialContent }: { initialContent?: Resolution } = $props();
+
+	const store = createNativeStore(initialContent ?? createEmptyResolution('General Assembly'), {
+		onChange: (snapshot) => {
+			// Persist to your backend, debounced if you like.
+			void saveToServer(snapshot);
+		}
 	});
-
-	function handleChange(updated: Resolution) {
-		resolution = updated;
-		console.log('Resolution updated:', updated);
-	}
 </script>
 
 <ResolutionEditor
-	committeeName="General Assembly"
-	{resolution}
-	editable={true}
+	{store}
+	editable
 	labels={germanLabels}
 	preamblePhrases={germanPreamblePhrases}
 	operativePhrases={germanOperativePhrases}
-	onResolutionChange={handleChange}
 />
 ```
 
-### Preview Only
+> The store owns a Svelte 5 `$state`, so `store.snapshot` is reactive — components re-render automatically. Don't keep a separate `$state<Resolution>` outside the store.
+
+### Y.js (real-time collaboration)
+
+```svelte
+<script lang="ts">
+	import * as Y from 'yjs';
+	import { WebsocketProvider } from 'y-websocket';
+	import { ResolutionEditor } from '@deutschemodelunitednations/munify-resolution-editor';
+	import {
+		createYjsStore,
+		createAwarenessPresence
+	} from '@deutschemodelunitednations/munify-resolution-editor/yjs';
+	import type {
+		ResolutionStore,
+		PresenceAdapter
+	} from '@deutschemodelunitednations/munify-resolution-editor';
+
+	let { paperId, currentUser }: { paperId: string; currentUser: { id: string; name: string } } =
+		$props();
+
+	let store = $state<ResolutionStore | null>(null);
+	let presence = $state<PresenceAdapter | null>(null);
+	let synced = $state(false);
+
+	$effect(() => {
+		const doc = new Y.Doc();
+		const provider = new WebsocketProvider(`wss://${location.host}/api/ws/yjs`, paperId, doc);
+
+		const s = createYjsStore(doc); // no `seed` — server delivers initial state
+		const p = createAwarenessPresence({ awareness: provider.awareness, user: currentUser });
+
+		const onSynced = (v: boolean) => (synced = v);
+		provider.on('synced', onSynced);
+		store = s;
+		presence = p;
+
+		return () => {
+			provider.off('synced', onSynced);
+			s.destroy();
+			provider.destroy();
+			doc.destroy();
+			store = null;
+			presence = null;
+			synced = false;
+		};
+	});
+</script>
+
+{#if !synced || !store}
+	<div>Connecting…</div>
+{:else}
+	<ResolutionEditor {store} presence={presence ?? undefined} editable />
+{/if}
+```
+
+> **Important**: gate the editor on `synced`. Until the WS handshake completes the local Y.Doc has no root structure, and mutators that target it will silently no-op (e.g. `addPreambleClause` returns without inserting).
+
+### Preview only
 
 ```svelte
 <script lang="ts">
 	import { ResolutionPreview } from '@deutschemodelunitednations/munify-resolution-editor';
-	import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
 </script>
 
 <ResolutionPreview
 	{resolution}
-	labels={germanLabels}
 	headerData={{
 		conferenceName: 'Model United Nations',
 		committeeName: 'Security Council',
@@ -134,26 +208,99 @@ Tailwind CSS generates only the CSS for utility classes that are actually used i
 />
 ```
 
-## Exports
+`ResolutionPreview` is a pure render — no store needed.
 
-### Main Components
+---
 
-```typescript
+## Server-side mutations (Y.js mode)
+
+When the host application needs to mutate a paper from the server (e.g. applying an approved amendment, transitioning status), it should mutate the canonical `Y.Doc` directly, not the JSON projection. The library exports the conversion helpers:
+
+```ts
 import {
-	ResolutionEditor, // Full editing interface
-	ResolutionPreview, // Read-only preview
-	ClauseEditor, // Preamble clause editor
-	OperativeClauseEditor, // Operative clause editor
-	SubClauseEditor, // Recursive subclause editor
-	PhraseLookupModal, // Phrase browsing modal
-	PhraseSuggestions, // Inline autocomplete
-	ImportModal // Text import modal
+	jsonToYDoc,
+	yDocToJson,
+	replaceResolution as replaceYDocResolution
+} from '@deutschemodelunitednations/munify-resolution-editor/yjs';
+```
+
+A typical server flow looks like:
+
+```ts
+import * as Y from 'yjs';
+import {
+	yDocToJson,
+	replaceResolution
+} from '@deutschemodelunitednations/munify-resolution-editor/yjs';
+
+// inside an async server-side function with the doc in hand
+doc.transact(() => {
+	const before = yDocToJson(doc);
+	const after = applyAmendment(before, amendment); // pure JSON transform
+	replaceResolution(doc, after); // structural diff, preserves ids
+}, 'server');
+```
+
+The `'server'` origin tag lets WS sync-loop guards (which ignore their own echo) distinguish server mutations from peer broadcasts.
+
+CHASE has a reference implementation at `src/api/yjs/server.ts` (ref-counted in-memory cache, debounced persistence to a `bytea` column, idle eviction). See `MIGRATION.md` for a porting checklist.
+
+---
+
+## API Reference
+
+### Stores
+
+```ts
+import {
+	createNativeStore,
+	createEmptyNativeStore,
+	type ResolutionStore,
+	type TextHandle,
+	type TextLocation,
+	type ClausePath,
+	type SubclausesBlockPath,
+	type OutdentResult,
+	type PresenceAdapter,
+	type PresenceUser,
+	type PresenceInfo,
+	type NativeStoreOptions
+} from '@deutschemodelunitednations/munify-resolution-editor';
+
+import {
+	createYjsStore,
+	createAwarenessPresence,
+	jsonToYDoc,
+	yDocToJson,
+	replaceResolution,
+	bindYTextToTextarea,
+	ROOT_KEY,
+	type YjsStoreOptions,
+	type AwarenessPresenceOptions
+} from '@deutschemodelunitednations/munify-resolution-editor/yjs';
+```
+
+### Components
+
+```ts
+import {
+	ResolutionEditor,
+	ResolutionPreview,
+	ResolutionDocumentHeader,
+	ResolutionDocumentFooter,
+	ClauseEditor,
+	OperativeClauseEditor,
+	SubClauseEditor,
+	PhraseLookupModal,
+	PhraseSuggestions,
+	ImportModal,
+	ResolutionPrintPreview
 } from '@deutschemodelunitednations/munify-resolution-editor';
 ```
 
 ### Schema & Types
 
-```typescript
+```ts
 import {
 	type Resolution,
 	type PreambleClause,
@@ -163,42 +310,50 @@ import {
 	type TextBlock,
 	type SubclausesBlock,
 	type ResolutionHeaderData,
-	resolutionSchema,
+	type AmendmentOverlay,
+	ResolutionSchema,
+	createEmptyResolution,
 	createEmptyOperativeClause,
+	createEmptyPreambleClause,
 	createEmptySubClause,
 	createTextBlock,
 	createSubclausesBlock,
-	getSubClauseLabel
+	getSubClauseLabel,
+	isLegacyResolution,
+	migrateResolution,
+	validateResolution
 } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 ```
 
 ### Phrases
 
-```typescript
-// All German phrases
+```ts
 import {
 	germanPreamblePhrases,
-	germanOperativePhrases
-} from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
-
-// Or import individually
-import { preamblePhrases } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
-import { operativePhrases } from '@deutschemodelunitednations/munify-resolution-editor/phrases/de';
+	germanOperativePhrases,
+	englishPreamblePhrases,
+	englishOperativePhrases
+} from '@deutschemodelunitednations/munify-resolution-editor/phrases';
 ```
 
-### Internationalization
+### i18n
 
-```typescript
+```ts
 import type { ResolutionEditorLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n';
-import { germanLabels } from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
+import {
+	germanLabels,
+	englishLabels
+} from '@deutschemodelunitednations/munify-resolution-editor/i18n/de';
 ```
+
+---
 
 ## Extension Points
 
-The editor supports Svelte 5 snippet-based extension points for customization:
+Editor render slots use Svelte 5 snippets:
 
 ```svelte
-<ResolutionEditor {...props}>
+<ResolutionEditor {store}>
 	{#snippet clauseToolbar({ clause, index })}
 		<button onclick={() => addAmendment(clause)}>Add Amendment</button>
 	{/snippet}
@@ -210,34 +365,37 @@ The editor supports Svelte 5 snippet-based extension points for customization:
 	{/snippet}
 
 	{#snippet previewHeader({ resolution, headerData })}
-		<div class="custom-header">Custom header content</div>
+		<div class="custom-header">…</div>
 	{/snippet}
 
 	{#snippet previewFooter({ resolution })}
-		<div class="signatures">Signatures section</div>
+		<div class="signatures">…</div>
 	{/snippet}
 </ResolutionEditor>
 ```
 
+Available snippets: `clauseToolbar`, `preambleClauseToolbar`, `clauseAnnotations`, `preambleAnnotations`, `afterPreambleClause`, `afterOperativeClause`, `betweenOperativeClauses`, `previewHeader`, `previewFooter`.
+
+---
+
+## Migrating from `0.1.x`
+
+The `0.1` API took `resolution` + `editable` + `onResolutionChange` props directly on `ResolutionEditor`. In `0.2` the editor consumes a `ResolutionStore` and the consumer wires persistence into the store.
+
+See [`MIGRATION.md`](./MIGRATION.md) for the full upgrade path including a removed-props table and search-and-replace recipes.
+
+---
+
 ## Development
 
 ```bash
-# Install dependencies
 bun install
-
-# Start dev server
-bun run dev
-
-# Build library
-bun run package
-
-# Type checking
-bun run check
-
-# Run tests
+bun run dev        # demo SvelteKit app
+bun run package    # build the library
+bun run check      # svelte-check
 bun test
 ```
 
 ## License
 
-MIT - Deutsche Model United Nations e.V.
+MIT — Deutsche Model United Nations e.V.

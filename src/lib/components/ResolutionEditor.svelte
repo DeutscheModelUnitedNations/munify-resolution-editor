@@ -8,14 +8,11 @@
 		type SubClause,
 		type ClauseBlock,
 		type AmendmentOverlay,
-		createEmptyResolution,
-		createEmptyOperativeClause,
 		createTextBlock,
 		createSubclausesBlock,
 		generateClauseId,
 		generateSubClauseId,
-		getFirstTextContent,
-		migrateResolution
+		getFirstTextContent
 	} from '../schema/resolution';
 	import {
 		type PhrasePattern,
@@ -24,8 +21,8 @@
 	} from '../services/phraseValidation';
 	import type { ParsedOperativeClause } from '../services/resolutionParser';
 	import type { ResolutionEditorLabels } from '../i18n/types';
+	import type { PresenceAdapter, ResolutionStore } from '../store/types';
 	import { englishLabels } from '../i18n/en';
-	import { fade } from 'svelte/transition';
 	import ClauseEditor from './ClauseEditor.svelte';
 	import OperativeClauseEditor from './OperativeClauseEditor.svelte';
 	import ResolutionPreview from './ResolutionPreview.svelte';
@@ -33,32 +30,22 @@
 	import ImportModal from './ImportModal.svelte';
 
 	interface Props {
-		committeeName: string;
-		resolution: Resolution;
+		store: ResolutionStore;
 		editable?: boolean;
 		headerData?: ResolutionHeaderData;
-		// Phrase patterns (provide either patterns or phrases arrays)
 		preamblePatterns?: PhrasePattern[];
 		operativePatterns?: PhrasePattern[];
 		preamblePhrases?: string[];
 		operativePhrases?: string[];
-		// i18n
 		labels?: Partial<ResolutionEditorLabels>;
-		// Callbacks
-		onResolutionChange?: (resolution: Resolution) => void;
 		onCopySuccess?: (phrase: string) => void;
 		onCopyError?: (error: Error) => void;
-		// Clause-level locking (all optional — editor works without them)
-		onClauseLock?: (clauseId: string) => void;
-		onClauseUnlock?: (clauseId: string) => void;
-		onClauseInteraction?: (clauseId: string) => void;
-		lockedClauseIds?: Set<string>;
-		editableClauseIds?: Set<string>;
-		// Amendment overlays
 		amendments?: AmendmentOverlay[];
 		rejectedClauseIds?: string[];
 		onAmendmentClick?: (amendmentId: string) => void;
-		// Extension points (Svelte 5 snippets)
+		/** Optional remote-user awareness adapter. Native consumers pass undefined. */
+		presence?: PresenceAdapter;
+		// Snippet extension points
 		clauseToolbar?: Snippet<[{ clause: OperativeClause; index: number }]>;
 		preambleClauseToolbar?: Snippet<[{ clause: PreambleClause; index: number }]>;
 		clauseAnnotations?: Snippet<[{ clause: OperativeClause; index: number }]>;
@@ -71,8 +58,7 @@
 	}
 
 	let {
-		committeeName,
-		resolution: initialContent,
+		store,
 		editable = true,
 		headerData,
 		preamblePatterns: preamblePatternsInput,
@@ -80,17 +66,12 @@
 		preamblePhrases = [],
 		operativePhrases = [],
 		labels = {},
-		onResolutionChange,
 		onCopySuccess,
 		onCopyError,
-		onClauseLock,
-		onClauseUnlock,
-		onClauseInteraction,
-		lockedClauseIds,
-		editableClauseIds,
 		amendments = [],
 		rejectedClauseIds = [],
 		onAmendmentClick,
+		presence,
 		clauseToolbar,
 		preambleClauseToolbar,
 		clauseAnnotations,
@@ -102,136 +83,79 @@
 		previewFooter
 	}: Props = $props();
 
-	// Clause disabled logic: when editableClauseIds is provided, a clause is disabled
-	// unless the user holds a confirmed lock for it, OR if it's locked by another user.
-	function isClauseDisabled(clauseId: string): boolean {
-		if (lockedClauseIds?.has(clauseId)) return true;
-		if (editableClauseIds !== undefined && !editableClauseIds.has(clauseId)) return true;
-		return false;
-	}
+	const t = $derived({ ...englishLabels, ...labels });
 
-	// Hover-to-lock overlay
-	let hoveredClauseId = $state<string | null>(null);
+	const resolution = $derived(store.snapshot);
 
-	function needsLockOverlay(clauseId: string): boolean {
-		if (!onClauseLock) return false;
-		if (editableClauseIds?.has(clauseId)) return false;
-		if (lockedClauseIds?.has(clauseId)) return false;
-		return true;
-	}
-
-	// Merge labels with defaults
-	const t = { ...englishLabels, ...labels };
-
-	// Initialize resolution state with migration from legacy format
-	let resolution = $state<Resolution>(
-		migrateResolution(initialContent ?? createEmptyResolution(committeeName)) as Resolution
-	);
-
-	// Sync from prop when it changes externally (e.g. subscription updates for viewers)
-	// Uses a plain (non-reactive) flag to suppress the onResolutionChange callback
-	let skipNextOnChange = false;
-	let lastPropRef = initialContent;
-	$effect(() => {
-		if (initialContent !== lastPropRef) {
-			lastPropRef = initialContent;
-			skipNextOnChange = true;
-			resolution = migrateResolution(
-				initialContent ?? createEmptyResolution(committeeName)
-			) as Resolution;
-		}
-	});
-
-	// Use provided patterns or create from phrase arrays
-	let preamblePatterns = $derived(preamblePatternsInput ?? createPhrasePatterns(preamblePhrases));
-	let operativePatterns = $derived(
+	const preamblePatterns = $derived(preamblePatternsInput ?? createPhrasePatterns(preamblePhrases));
+	const operativePatterns = $derived(
 		operativePatternsInput ?? createPhrasePatterns(operativePhrases)
 	);
 
-	// Ensure committeeName is always current
-	$effect(() => {
-		resolution.committeeName = committeeName;
-	});
-
-	// Notify parent of resolution changes (deep-read to track sub-property mutations)
-	// Skips the initial mount fire and prop-sync fires to avoid feedback loops
-	let initialized = false;
-	$effect(() => {
-		JSON.stringify(resolution);
-		if (!initialized) {
-			initialized = true;
-			return;
-		}
-		if (skipNextOnChange) {
-			skipNextOnChange = false;
-			return;
-		}
-		onResolutionChange?.(resolution);
-	});
-
-	// Preview visibility toggle
 	let showPreview = $state(true);
-
-	// Lookup modals
 	let showPreambleLookup = $state(false);
 	let showOperativeLookup = $state(false);
-
-	// Import modals
 	let showPreambleImport = $state(false);
 	let showOperativeImport = $state(false);
 
-	// Track last focused clause for insertion from lookup modal
-	let lastFocusedPreambleIndex = $state<number | null>(null);
-	let lastFocusedOperativeIndex = $state<number | null>(null);
+	let lastFocusedPreambleId = $state<string | null>(null);
+	let lastFocusedOperativeId = $state<string | null>(null);
+	let lastFocusedId = $state<string | null>(null);
 
+	// Push local focus into the presence adapter so remote peers see it.
+	// Use a single most-recently-focused id rather than preferring preamble —
+	// otherwise focusing an operative clause never overrides a stale preamble id.
+	$effect(() => {
+		presence?.setFocus(lastFocusedId ?? undefined);
+	});
+
+	// Validation
+	const preambleValidation = $derived(
+		resolution.preamble.map((clause) => {
+			if (!clause.content.trim()) return { valid: true } as { valid: boolean };
+			return validatePhrase(clause.content, preamblePatterns);
+		})
+	);
+
+	const operativeValidation = $derived(
+		resolution.operative.map((clause) => {
+			const firstContent = getFirstTextContent(clause);
+			if (!firstContent.trim()) return { valid: true } as { valid: boolean };
+			return validatePhrase(firstContent, operativePatterns);
+		})
+	);
+
+	// Phrase insertion handlers (target the last-focused clause).
 	function insertIntoPreamble(phrase: string) {
-		if (
-			lastFocusedPreambleIndex !== null &&
-			lastFocusedPreambleIndex < resolution.preamble.length
-		) {
-			const clause = resolution.preamble[lastFocusedPreambleIndex];
-			// Insert phrase at the start, preserving existing content
-			if (clause.content.trim()) {
-				clause.content = phrase + ' ' + clause.content;
-			} else {
-				clause.content = phrase;
-			}
-		}
+		const id = lastFocusedPreambleId;
+		if (!id) return;
+		const clause = resolution.preamble.find((c) => c.id === id);
+		if (!clause) return;
+		const next = clause.content.trim() ? phrase + ' ' + clause.content : phrase;
+		store.updatePreambleContent(id, next);
 	}
 
 	function insertIntoOperative(phrase: string) {
-		if (
-			lastFocusedOperativeIndex !== null &&
-			lastFocusedOperativeIndex < resolution.operative.length
-		) {
-			const clause = resolution.operative[lastFocusedOperativeIndex];
-			// Insert phrase at the start of the first text block
-			const firstBlock = clause.blocks[0];
-			if (firstBlock?.type === 'text') {
-				const newBlocks = [...clause.blocks];
-				if (firstBlock.content.trim()) {
-					newBlocks[0] = { ...firstBlock, content: phrase + ' ' + firstBlock.content };
-				} else {
-					newBlocks[0] = { ...firstBlock, content: phrase };
-				}
-				resolution.operative[lastFocusedOperativeIndex] = { ...clause, blocks: newBlocks };
-				resolution.operative = [...resolution.operative]; // Trigger reactivity
-			}
-		}
+		const id = lastFocusedOperativeId;
+		if (!id) return;
+		const clause = resolution.operative.find((c) => c.id === id);
+		if (!clause) return;
+		const firstBlock = clause.blocks[0];
+		if (firstBlock?.type !== 'text') return;
+		const next = firstBlock.content.trim() ? phrase + ' ' + firstBlock.content : phrase;
+		store.updateTextBlock({ kind: 'operative', clauseId: id }, firstBlock.id, next);
 	}
 
 	// Import handlers
 	function handlePreambleImport(clauses: string[] | ParsedOperativeClause[]) {
-		// clauses is string[] for preamble
-		const preambleClauses = clauses as string[];
-		const newClauses: PreambleClause[] = preambleClauses.map((content) => ({
+		const list = clauses as string[];
+		const newClauses: PreambleClause[] = list.map((content) => ({
 			id: generateClauseId('p'),
 			content
 		}));
-		resolution.preamble = [...resolution.preamble, ...newClauses];
+		store.insertPreambleClauses(resolution.preamble.length, newClauses);
 	}
 
-	// Convert parsed subclauses to new block-based format
 	function convertParsedSubClauses(
 		parsed: { content: string; children?: { content: string; children?: unknown[] }[] }[]
 	): SubClause[] {
@@ -249,98 +173,20 @@
 					)
 				);
 			}
-			return {
-				id: generateSubClauseId(),
-				blocks
-			};
+			return { id: generateSubClauseId(), blocks };
 		});
 	}
 
 	function handleOperativeImport(clauses: string[] | ParsedOperativeClause[]) {
-		// clauses is ParsedOperativeClause[] for operative
-		const operativeClauses = clauses as ParsedOperativeClause[];
-		const newClauses: OperativeClause[] = operativeClauses.map((parsed) => {
+		const list = clauses as ParsedOperativeClause[];
+		const newClauses: OperativeClause[] = list.map((parsed) => {
 			const blocks: ClauseBlock[] = [createTextBlock(parsed.content)];
 			if (parsed.subClauses && parsed.subClauses.length > 0) {
 				blocks.push(createSubclausesBlock(convertParsedSubClauses(parsed.subClauses)));
 			}
-			return {
-				id: generateClauseId('o'),
-				blocks
-			};
+			return { id: generateClauseId('o'), blocks };
 		});
-		resolution.operative = [...resolution.operative, ...newClauses];
-	}
-
-	// Compute validation errors for preamble clauses
-	let preambleValidation = $derived(
-		resolution.preamble.map((clause) => {
-			if (!clause.content.trim()) return { valid: true }; // Empty is OK (not yet filled)
-			return validatePhrase(clause.content, preamblePatterns);
-		})
-	);
-
-	// Compute validation errors for operative clauses (check first text block)
-	let operativeValidation = $derived(
-		resolution.operative.map((clause) => {
-			const firstContent = getFirstTextContent(clause);
-			if (!firstContent.trim()) return { valid: true }; // Empty is OK
-			return validatePhrase(firstContent, operativePatterns);
-		})
-	);
-
-	// Preamble clause management
-	function addPreambleClause() {
-		const newClause: PreambleClause = {
-			id: generateClauseId('p'),
-			content: ''
-		};
-		resolution.preamble = [...resolution.preamble, newClause];
-	}
-
-	function deletePreambleClause(index: number) {
-		resolution.preamble = resolution.preamble.filter((_, i) => i !== index);
-	}
-
-	function movePreambleClause(index: number, direction: 'up' | 'down') {
-		const newIndex = direction === 'up' ? index - 1 : index + 1;
-		if (newIndex < 0 || newIndex >= resolution.preamble.length) return;
-
-		const newPreamble = [...resolution.preamble];
-		[newPreamble[index], newPreamble[newIndex]] = [newPreamble[newIndex], newPreamble[index]];
-		resolution.preamble = newPreamble;
-	}
-
-	// Operative clause management
-	function addOperativeClause() {
-		resolution.operative = [...resolution.operative, createEmptyOperativeClause()];
-	}
-
-	function deleteOperativeClause(index: number) {
-		resolution.operative = resolution.operative.filter((_, i) => i !== index);
-	}
-
-	function moveOperativeClause(index: number, direction: 'up' | 'down') {
-		const newIndex = direction === 'up' ? index - 1 : index + 1;
-		if (newIndex < 0 || newIndex >= resolution.operative.length) return;
-
-		const newOperative = [...resolution.operative];
-		[newOperative[index], newOperative[newIndex]] = [newOperative[newIndex], newOperative[index]];
-		resolution.operative = newOperative;
-	}
-
-	// Update an operative clause
-	function updateOperativeClause(index: number, clause: OperativeClause) {
-		const newOperative = [...resolution.operative];
-		newOperative[index] = clause;
-		resolution.operative = newOperative;
-	}
-
-	// Insert a new operative clause after a specific index (used for outdent from depth 1)
-	function insertOperativeClauseAfter(afterIndex: number, newClause: OperativeClause) {
-		const newOperative = [...resolution.operative];
-		newOperative.splice(afterIndex + 1, 0, newClause);
-		resolution.operative = newOperative;
+		store.insertOperativeClauses(resolution.operative.length, newClauses);
 	}
 </script>
 
@@ -350,12 +196,10 @@
 	</legend>
 
 	{#if editable}
-		<!-- Edit Mode -->
 		<div class="space-y-6">
-			<!-- Header (non-editable) -->
 			<div class="bg-base-100 rounded-lg p-3 border border-base-300">
 				<div class="text-xs text-base-content/50 mb-1">{t.resolutionCommittee}</div>
-				<div class="font-bold uppercase tracking-wide">{committeeName},</div>
+				<div class="font-bold uppercase tracking-wide">{resolution.committeeName},</div>
 			</div>
 
 			<!-- Preamble Section -->
@@ -382,7 +226,11 @@
 							<i class="fa-solid fa-file-import"></i>
 							{t.resolutionImport}
 						</button>
-						<button type="button" class="btn btn-sm btn-ghost" onclick={addPreambleClause}>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost"
+							onclick={() => store.addPreambleClause()}
+						>
 							<i class="fa-solid fa-plus"></i>
 							{t.resolutionAddClause}
 						</button>
@@ -394,7 +242,11 @@
 						class="text-center py-4 text-base-content/50 bg-base-100 rounded-lg border border-dashed border-base-300"
 					>
 						<p class="text-sm">{t.resolutionNoPreambleClauses}</p>
-						<button type="button" class="btn btn-sm btn-ghost mt-2" onclick={addPreambleClause}>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost mt-2"
+							onclick={() => store.addPreambleClause()}
+						>
 							<i class="fa-solid fa-plus"></i>
 							{t.resolutionAddFirstClause}
 						</button>
@@ -402,68 +254,30 @@
 				{:else}
 					<div class="space-y-2">
 						{#each resolution.preamble as clause, index (clause.id)}
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div
-								class="relative"
-								onmouseenter={() => (hoveredClauseId = clause.id)}
-								onmouseleave={() => {
-									if (hoveredClauseId === clause.id) hoveredClauseId = null;
-								}}
-							>
+							<div class="relative">
 								{#if preambleAnnotations}
 									<div class="absolute -left-2 -top-2 z-10">
 										{@render preambleAnnotations({ clause, index })}
 									</div>
 								{/if}
 								<ClauseEditor
-									bind:content={clause.content}
+									handle={store.getTextHandle({ kind: 'preamble', clauseId: clause.id })}
 									placeholder={t.resolutionPreamblePlaceholder}
 									canMoveUp={index > 0}
 									canMoveDown={index < resolution.preamble.length - 1}
-									onMoveUp={() => movePreambleClause(index, 'up')}
-									onMoveDown={() => movePreambleClause(index, 'down')}
-									onDelete={() => deletePreambleClause(index)}
+									onMoveUp={() => store.movePreambleClause(clause.id, 'up')}
+									onMoveDown={() => store.movePreambleClause(clause.id, 'down')}
+									onDelete={() => store.deletePreambleClause(clause.id)}
 									onFocus={() => {
-										lastFocusedPreambleIndex = index;
-										// phrase insertion tracking only
+										lastFocusedPreambleId = clause.id;
+										lastFocusedId = clause.id;
 									}}
-									active={editableClauseIds?.has(clause.id) ?? false}
-									onInteraction={() => onClauseInteraction?.(clause.id)}
-									disabled={isClauseDisabled(clause.id)}
 									validationError={!preambleValidation[index]?.valid
 										? t.resolutionUnknownPhrase
 										: undefined}
 									patterns={preamblePatterns}
 									{labels}
 								/>
-								{#if hoveredClauseId === clause.id && needsLockOverlay(clause.id)}
-									<!-- svelte-ignore a11y_click_events_have_key_events -->
-									<div
-										class="absolute inset-0 z-20 flex items-center justify-center rounded-lg backdrop-blur-sm bg-base-300/30 cursor-pointer"
-										transition:fade={{ duration: 150 }}
-										onclick={() => {
-											onClauseLock?.(clause.id);
-											hoveredClauseId = null;
-										}}
-										role="button"
-										tabindex="0"
-									>
-										<button type="button" class="btn btn-primary btn-sm gap-2">
-											<i class="fa-solid fa-pen"></i>
-											{t.startEditing}
-										</button>
-									</div>
-								{/if}
-								{#if editableClauseIds?.has(clause.id)}
-									<button
-										type="button"
-										class="absolute -top-3 right-1 z-10 btn btn-success btn-xs gap-1"
-										onclick={() => onClauseUnlock?.(clause.id)}
-									>
-										<i class="fa-solid fa-lock-open"></i>
-										{t.doneEditing}
-									</button>
-								{/if}
 							</div>
 							{#if preambleClauseToolbar}
 								<div class="mt-2">
@@ -471,7 +285,11 @@
 								</div>
 							{/if}
 						{/each}
-						<button type="button" class="btn btn-sm btn-ghost w-full" onclick={addPreambleClause}>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost w-full"
+							onclick={() => store.addPreambleClause()}
+						>
 							<i class="fa-solid fa-plus"></i>
 							{t.resolutionAddClause}
 						</button>
@@ -503,7 +321,11 @@
 							<i class="fa-solid fa-file-import"></i>
 							{t.resolutionImport}
 						</button>
-						<button type="button" class="btn btn-sm btn-ghost" onclick={addOperativeClause}>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost"
+							onclick={() => store.addOperativeClause()}
+						>
 							<i class="fa-solid fa-plus"></i>
 							{t.resolutionAddClause}
 						</button>
@@ -515,7 +337,11 @@
 						class="text-center py-4 text-base-content/50 bg-base-100 rounded-lg border border-dashed border-base-300"
 					>
 						<p class="text-sm">{t.resolutionNoOperativeClauses}</p>
-						<button type="button" class="btn btn-sm btn-ghost mt-2" onclick={addOperativeClause}>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost mt-2"
+							onclick={() => store.addOperativeClause()}
+						>
 							<i class="fa-solid fa-plus"></i>
 							{t.resolutionAddFirstClause}
 						</button>
@@ -523,70 +349,31 @@
 				{:else}
 					<div class="space-y-4">
 						{#each resolution.operative as clause, index (clause.id)}
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div
-								class="relative"
-								onmouseenter={() => (hoveredClauseId = clause.id)}
-								onmouseleave={() => {
-									if (hoveredClauseId === clause.id) hoveredClauseId = null;
-								}}
-							>
+							<div class="relative">
 								{#if clauseAnnotations}
 									<div class="absolute -left-2 -top-2 z-10">
 										{@render clauseAnnotations({ clause, index })}
 									</div>
 								{/if}
 								<OperativeClauseEditor
+									{store}
 									{clause}
 									{index}
-									onUpdate={(updated) => updateOperativeClause(index, updated)}
 									canMoveUp={index > 0}
 									canMoveDown={index < resolution.operative.length - 1}
-									onMoveUp={() => moveOperativeClause(index, 'up')}
-									onMoveDown={() => moveOperativeClause(index, 'down')}
-									onDelete={() => deleteOperativeClause(index)}
+									onMoveUp={() => store.moveOperativeClause(clause.id, 'up')}
+									onMoveDown={() => store.moveOperativeClause(clause.id, 'down')}
+									onDelete={() => store.deleteOperativeClause(clause.id)}
 									onFocus={() => {
-										lastFocusedOperativeIndex = index;
-										// phrase insertion tracking only
+										lastFocusedOperativeId = clause.id;
+										lastFocusedId = clause.id;
 									}}
-									active={editableClauseIds?.has(clause.id) ?? false}
-									onInteraction={() => onClauseInteraction?.(clause.id)}
-									disabled={isClauseDisabled(clause.id)}
 									validationError={!operativeValidation[index]?.valid
 										? t.resolutionUnknownPhrase
 										: undefined}
 									patterns={operativePatterns}
-									onOutdentToOperative={(newOp) => insertOperativeClauseAfter(index, newOp)}
 									{labels}
 								/>
-								{#if hoveredClauseId === clause.id && needsLockOverlay(clause.id)}
-									<!-- svelte-ignore a11y_click_events_have_key_events -->
-									<div
-										class="absolute inset-0 z-20 flex items-center justify-center rounded-lg backdrop-blur-sm bg-base-300/30 cursor-pointer"
-										transition:fade={{ duration: 150 }}
-										onclick={() => {
-											onClauseLock?.(clause.id);
-											hoveredClauseId = null;
-										}}
-										role="button"
-										tabindex="0"
-									>
-										<button type="button" class="btn btn-primary btn-sm gap-2">
-											<i class="fa-solid fa-pen"></i>
-											{t.startEditing}
-										</button>
-									</div>
-								{/if}
-								{#if editableClauseIds?.has(clause.id)}
-									<button
-										type="button"
-										class="absolute -top-3 right-1 z-10 btn btn-success btn-xs gap-1"
-										onclick={() => onClauseUnlock?.(clause.id)}
-									>
-										<i class="fa-solid fa-lock-open"></i>
-										{t.doneEditing}
-									</button>
-								{/if}
 							</div>
 							{#if clauseToolbar}
 								<div class="mt-2">
@@ -594,7 +381,11 @@
 								</div>
 							{/if}
 						{/each}
-						<button type="button" class="btn btn-sm btn-ghost w-full" onclick={addOperativeClause}>
+						<button
+							type="button"
+							class="btn btn-sm btn-ghost w-full"
+							onclick={() => store.addOperativeClause()}
+						>
 							<i class="fa-solid fa-plus"></i>
 							{t.resolutionAddClause}
 						</button>
@@ -640,7 +431,6 @@
 			</div>
 		</div>
 	{:else}
-		<!-- Read-only Mode -->
 		<ResolutionPreview
 			{resolution}
 			{headerData}
@@ -659,7 +449,6 @@
 	{/if}
 </fieldset>
 
-<!-- Phrase Lookup Modals -->
 <PhraseLookupModal
 	patterns={preamblePatterns}
 	bind:open={showPreambleLookup}
@@ -682,7 +471,6 @@
 	{labels}
 />
 
-<!-- Import Modals -->
 <ImportModal
 	bind:open={showPreambleImport}
 	type="preamble"

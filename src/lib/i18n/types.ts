@@ -84,10 +84,6 @@ export interface ResolutionEditorLabels {
 	resolutionSponsoringDelegations: string;
 	resolutionDisclaimer: string;
 
-	// Locking
-	startEditing: string;
-	doneEditing: string;
-
 	// Amendments
 	amendmentProposed: string;
 	amendmentAdd: string;

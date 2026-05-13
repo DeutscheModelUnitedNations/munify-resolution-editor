@@ -1,11 +1,12 @@
 <script lang="ts">
 	import type { PhrasePattern } from '../services/phraseValidation';
 	import type { ResolutionEditorLabels } from '../i18n/types';
+	import type { TextHandle } from '../store/types';
 	import { englishLabels } from '../i18n/en';
 	import PhraseSuggestions from './PhraseSuggestions.svelte';
 
 	interface Props {
-		content: string;
+		handle: TextHandle;
 		placeholder?: string;
 		label?: string;
 		onMoveUp?: () => void;
@@ -15,7 +16,6 @@
 		onFocus?: () => void;
 		onInteraction?: () => void;
 		disabled?: boolean;
-		active?: boolean;
 		canMoveUp?: boolean;
 		canMoveDown?: boolean;
 		showAddSubClause?: boolean;
@@ -25,7 +25,7 @@
 	}
 
 	let {
-		content = $bindable(),
+		handle,
 		placeholder = '',
 		label = '',
 		onMoveUp,
@@ -35,7 +35,6 @@
 		onFocus,
 		onInteraction,
 		disabled = false,
-		active = false,
 		canMoveUp = true,
 		canMoveDown = true,
 		showAddSubClause = false,
@@ -44,15 +43,17 @@
 		labels = {}
 	}: Props = $props();
 
-	// Merge labels with defaults
-	const t = { ...englishLabels, ...labels };
+	const t = $derived({ ...englishLabels, ...labels });
 
 	let showSuggestions = $state(false);
 	let suggestionComponent: PhraseSuggestions | undefined = $state();
 
+	// Reactive read of the current value for suggestions and validation UI.
+	const currentValue = $derived(handle.get());
+
 	function handleInput() {
-		// Show suggestions only when typing at start of content (first ~30 chars, no comma yet)
-		showSuggestions = content.length > 0 && content.length < 30 && !content.includes(',');
+		showSuggestions =
+			currentValue.length > 0 && currentValue.length < 30 && !currentValue.includes(',');
 		onInteraction?.();
 	}
 
@@ -64,26 +65,23 @@
 
 	function handleFocus() {
 		onFocus?.();
-		if (patterns.length > 0 && content.length > 0 && content.length < 30) {
+		if (patterns.length > 0 && currentValue.length > 0 && currentValue.length < 30) {
 			showSuggestions = true;
 		}
 	}
 
 	function handleBlur() {
-		// Delay to allow click on suggestion
 		setTimeout(() => {
 			showSuggestions = false;
 		}, 150);
 	}
 
 	function selectSuggestion(phrase: string) {
-		// Replace the beginning of content with the selected phrase
-		// If there's a comma, keep everything after it
-		const commaIndex = content.indexOf(',');
+		const commaIndex = currentValue.indexOf(',');
 		if (commaIndex > -1) {
-			content = phrase + content.slice(commaIndex);
+			handle.set(phrase + currentValue.slice(commaIndex));
 		} else {
-			content = phrase;
+			handle.set(phrase);
 		}
 		showSuggestions = false;
 	}
@@ -92,23 +90,19 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="flex flex-col gap-2" onclick={() => onInteraction?.()}>
-	<!-- Clause content row -->
 	<div class="flex gap-2 items-start">
-		<!-- Clause label (optional) -->
 		{#if label}
 			<span class="text-sm font-medium text-base-content/70 min-w-8 pt-2">{label}</span>
 		{/if}
 
-		<!-- Textarea for clause content with suggestions -->
 		<div class="relative flex-1">
 			<textarea
-				bind:value={content}
+				{@attach (el) => handle.bindTextarea(el as HTMLTextAreaElement)}
 				{placeholder}
-				class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed"
-				class:bg-base-200={!active}
-				class:bg-base-100={active}
+				class="textarea textarea-bordered w-full min-h-20 resize-y text-sm leading-relaxed bg-base-100"
 				class:textarea-warning={validationError}
 				rows="2"
+				{disabled}
 				oninput={handleInput}
 				onkeydown={handleKeyDown}
 				onfocus={handleFocus}
@@ -119,7 +113,7 @@
 				<PhraseSuggestions
 					bind:this={suggestionComponent}
 					{patterns}
-					inputValue={content}
+					inputValue={currentValue}
 					visible={showSuggestions}
 					onSelect={selectSuggestion}
 					onClose={() => (showSuggestions = false)}
@@ -128,7 +122,6 @@
 		</div>
 	</div>
 
-	<!-- Action buttons row -->
 	<div class="flex flex-wrap gap-1 {label ? 'ml-10' : ''}">
 		{#if validationError}
 			<span class="badge badge-warning badge-sm gap-1">
