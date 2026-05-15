@@ -1,436 +1,486 @@
-# RES-Markup — Formale Spezifikation
+# RES-Markup — Format Specification
 
 **Version:** 1.0
-**Status:** Entwurf zur Review (noch keine Implementierung)
-**Geltungsbereich:** Import-/Export-Austauschformat für eine einzelne `Resolution`
-inkl. `ResolutionHeaderData`. Maßgebliches Datenmodell ist
+**Status:** Draft for review (no implementation yet)
+**Scope:** Import/export interchange format for a single `Resolution`
+including `ResolutionHeaderData`. The authoritative data model is
 `src/lib/schema/resolution.ts`.
 
----
-
-## 1. Zielsetzung & Designprinzipien
-
-RES-Markup ist ein zeilenorientiertes Klartextformat. Es hat drei
-gleichrangige Zielgruppen:
-
-1. **Mensch** — lesbar und editierbar; eine Datei sieht aus wie die fertige
-   Resolution.
-2. **LLM** — robust schreibbar; Struktur wird durch zeilenführende **Marker**
-   bestimmt, nicht durch exakte Einrückung.
-3. **Programm** — eindeutig parse-, validier- und serialisierbar; jede Datei
-   lässt sich verlustfrei in das `Resolution`-Schema überführen.
-
-Tragende Prinzipien:
-
-- **Marker bestimmen den Typ, Einrückung nur die Zuordnung.** Ob etwas Text,
-  Unterpunkt oder Schlusssatz ist, hängt nie von Leerzeichenzählung ab.
-- **Tolerant lesen, kanonisch schreiben.** Der Parser akzeptiert ein breites
-  Eingabespektrum (lockere Nummerierung, beliebige Einrückung, optionale
-  Leerzeilen). Der Serializer erzeugt *genau eine* kanonische Form.
-- **Validität ist programmatisch entscheidbar** (Abschnitt 7).
-- **IDs sind kein Inhalt.** `parse` erzeugt neue IDs; `serialize` gibt nie
-  IDs aus. Cursor-/Kollaborationserhalt ist Sache von `replaceResolution`,
-  nicht des Formats.
-
-Bewusst **nicht** Teil von v1: Amendments (`AmendmentOverlay`), interne IDs,
-Kommentarsyntax, eingebettete Konferenzembleme als Pflichtfeld. Begründung in
-Abschnitt 9.
+This specification is written in English; RES-Markup is an international
+format and all of its keywords are English.
 
 ---
 
-## 2. Lexikalische Struktur
+## 1. Purpose & design principles
 
-- **Kodierung:** UTF-8.
-- **Zeilenenden:** `CRLF` und `CR` werden beim Einlesen zu `LF` normalisiert.
-  Kanonische Ausgabe verwendet ausschließlich `LF`.
-- **Trailing Whitespace** jeder Zeile wird beim Einlesen verworfen.
-- **Indent-Einheit:** 3 Leerzeichen pro Verschachtelungsebene (`INDENT = 3`).
-  Tabs werden beim Einlesen als 1 Tab = `INDENT` Leerzeichen expandiert.
-- **Spaltenzählung** ist 0-basiert und bezieht sich auf die erste
-  Nicht-Leerzeichen-Position einer Zeile.
-- **Logische Zeile:** eine Markerzeile plus alle direkt folgenden
-  *Fortsetzungszeilen* (Zeilen ohne eigenen Marker, tiefer oder gleich
-  eingerückt, keine Leerzeile dazwischen). Der Inhalt einer logischen Zeile
-  wird mit genau einem Leerzeichen (`U+0020`) zusammengefügt.
-- **Leerzeile:** Zeile, die nach Trimmen leer ist. Sie beendet eine logische
-  Zeile / einen Block. Mehrere aufeinanderfolgende Leerzeilen sind
-  äquivalent zu einer.
+RES-Markup is a line-oriented plain-text format with three equally
+important audiences:
 
-### 2.1 Marker (zeilenführend, nach optionaler Einrückung)
+1. **Humans** — readable and editable; a file looks like the finished
+   resolution.
+2. **LLMs** — robustly writable; structure is conveyed through
+   line-leading **markers** plus simple relative indentation, never through
+   absolute whitespace counting.
+3. **Programs** — unambiguously parseable, validatable and serializable;
+   every file maps losslessly onto the `Resolution` schema.
 
-| Marker | Bedeutung | Regex (kanonisch) |
+Core principles:
+
+- **Markers determine the *kind*; indentation determines only *depth and
+  attachment*.** Whether a line is a clause item, a chapeau continuation,
+  or a closing text block is decided by its marker, never by counting
+  spaces.
+- **No ordinals in the format.** There are no `1.` / `(a)` / `(i)`
+  labels. A uniform `- ` list marker is used at every level; nesting is
+  expressed by indentation. Display labels are derived later from depth and
+  index via `getSubClauseLabel` — they are not part of the interchange
+  format. This removes the entire class of "how do I number the next level"
+  mistakes.
+- **Lenient on input, canonical on output.** The parser accepts a broad
+  range of inputs (any consistent indent step, optional blank lines,
+  loose section casing). The serializer emits exactly one canonical form.
+- **Validity is programmatically decidable** (section 7).
+- **IDs are not content.** `parse` mints fresh IDs; `serialize` never emits
+  IDs. Cursor/collaboration preservation is the job of `replaceResolution`,
+  not of this format.
+
+Deliberately **out of v1**: amendments (`AmendmentOverlay`), internal IDs,
+comment syntax, embedded conference emblem. Rationale in section 9.
+
+### 1.1 Accepted tradeoff: depth via indentation
+
+Dropping ordinals means nesting depth is now carried by indentation — the
+property we criticized about YAML. This is acceptable because:
+
+- depth is inferred **relatively** (any consistent increase = one level
+  deeper, exactly like Markdown lists, which LLMs produce reliably) — not
+  by absolute column arithmetic;
+- the **kind** of every line is still 100 % marker-determined (`- ` = list
+  item, `~ ` = closing text, no marker = continuation);
+- maximum depth is hard-capped at 4 (`MAX_SUBCLAUSE_DEPTH`), so drift
+  cannot silently produce invalid structure — it produces a precise error.
+
+The real-world error source being eliminated (mislabeling deeper levels)
+is larger than the one introduced (indentation drift, bounded and
+detectable).
+
+---
+
+## 2. Lexical structure
+
+- **Encoding:** UTF-8.
+- **Line endings:** `CRLF` and `CR` are normalized to `LF` on read.
+  Canonical output uses `LF` only.
+- **Trailing whitespace** on every line is discarded on read.
+- **Indent unit:** canonical output uses **2 spaces per nesting level**
+  (`INDENT = 2`), matching common list conventions. On input, the indent
+  step may be any positive constant; depth is inferred relatively (2.2).
+  A tab counts as `INDENT` spaces.
+- **Column** is 0-based and refers to the first non-whitespace character of
+  a line.
+- **Logical line:** a marker line plus any directly following
+  *continuation lines* (non-blank lines with no marker, indented at least
+  to the marker's content column, no blank line in between). The contents
+  of a logical line are joined with exactly one space (`U+0020`).
+- **Blank line:** a line empty after trimming. It terminates a logical
+  line / block. Several consecutive blank lines are equivalent to one.
+
+### 2.1 Markers (line-leading, after optional indentation)
+
+| Marker | Meaning | Canonical regex |
 |---|---|---|
-| `%RES <ver>` | Formatkopf, **Pflicht, Zeile 1** | `^%RES \d+\.\d+$` |
-| `Key: Wert` | Front-Matter-Paar (nur vor `---`) | `^[A-Za-z][A-Za-z0-9]*: .*$` |
-| `---` | Ende Front-Matter | `^---$` |
-| `== <Sektion> ==` | Sektionsüberschrift | `^== .+ ==$` |
-| `- ` | Präambelklausel | `^- \S` |
-| `n.` | Operative Klausel (n = Dezimalzahl) | `^\d+\. \S` |
-| `(a)` `(i)` `(aa)` `(aaa)` | Unterpunkt, Ebene aus Labelform | `^\([a-z]+\) \S` |
-| `~ ` | Schlusssatz-Textblock nach Unterpunkten | `^~ \S` |
+| `%RES <ver>` | Format header, **required, line 1** | `^%RES \d+\.\d+$` |
+| `Key: Value` | Front-matter pair (only before `---`) | `^[A-Za-z][A-Za-z0-9]*: .*$` |
+| `---` | End of front-matter | `^---$` |
+| `== <Section> ==` | Section heading | `^== .+ ==$` |
+| `- ` | List item (preamble clause / operative clause / sub-clause) | `^- \S` |
+| `~ ` | Closing text block after a sub-list | `^~ \S` |
 
-Maskierung: Soll eine **Inhaltszeile** wörtlich mit einer der obigen
-Markerformen beginnen, wird ihr ein einzelner Backslash `\` vorangestellt.
-Der Parser entfernt genau einen führenden `\`. (In Fließtext-Prosa praktisch
-nie nötig.)
+Escaping: if a **content line** must literally begin with one of the marker
+forms above, prefix it with a single backslash `\`. The parser strips
+exactly one leading `\`. (Practically never needed in prose.)
+
+### 2.2 Relative depth inference
+
+The parser maintains a stack of open list items, each remembering its
+indentation column. For a `- ` line at column `I`:
+
+- if `I` is greater than the current top item's column → it is a **child**
+  (depth = parent depth + 1);
+- if `I` equals the column of some item on the stack → it is a **sibling**
+  of that item (pop deeper levels);
+- otherwise (`I` between two known columns, or below all) → pop to the
+  nearest shallower known column and treat as its child / sibling
+  accordingly.
+
+Only the *relative* ordering of columns matters; the absolute step size is
+irrelevant. Inconsistent indentation that cannot be resolved to a monotone
+stack (e.g. a child less indented than its parent) is `ERR_BAD_INDENT`.
 
 ---
 
-## 3. Grammatik (EBNF)
+## 3. Grammar (EBNF)
 
-Notation: `{ x }` = 0..n, `[ x ]` = optional, `|` = Alternative, `" "` =
-Literal, `NL` = ein Zeilenumbruch, `TEXT` = nichtleerer Inhaltsstring einer
-logischen Zeile (Fortsetzungszeilen bereits zusammengefügt).
+Notation: `{ x }` = 0..n, `[ x ]` = optional, `|` = alternative, `" "` =
+literal, `NL` = newline, `TEXT` = non-empty joined content of a logical
+line, `INDENT(d)` = indentation for depth `d`.
 
 ```ebnf
-document      = header NL "---" NL { blankline }
-                preamble-section
-                operative-section ;
+document        = "%RES " version NL { blankline }
+                  { kv-pair }
+                  "---" NL { blankline }
+                  header-section
+                  preamble-section
+                  operative-section ;
 
-header        = "%RES " version NL { blankline } { kv-pair } ;
-version       = digit { digit } "." digit { digit } ;
-kv-pair       = key ": " value NL ;
-key           = letter { letter | digit } ;
-value         = { any-char-except-NL } ;
+version         = digit { digit } "." digit { digit } ;
+kv-pair         = key ": " value NL ;
+key             = letter { letter | digit } ;
+value           = { any-char-except-NL } ;
 
-preamble-section  = "== Präambel ==" NL { blankline }
+header-section    = "== Header ==" NL { blankline }
+                    TEXT NL { blankline } ;          (* the body headline *)
+
+preamble-section  = "== Preamble ==" NL { blankline }
                     { preamble-clause } ;
-preamble-clause   = "- " TEXT NL { blankline } ;
+preamble-clause   = "- " TEXT NL { blankline } ;     (* flat, no nesting *)
 
-operative-section = "== Operativer Teil ==" NL { blankline }
-                    { operative-clause } ;
+operative-section = "== Operative ==" NL { blankline }
+                    { clause } ;
 
-operative-clause  = arabic "." " " TEXT NL          (* Chapeau = 1. TextBlock *)
-                    { block-tail }
-                    { blankline } ;
+(* A clause maps to OperativeClause/SubClause. blocks[] order is preserved. *)
+clause          = INDENT(d) "- " TEXT NL             (* chapeau = 1st TextBlock *)
+                  { block-tail } ;
+block-tail      = sublist                            (* -> SubclausesBlock *)
+                | closing-text ;                     (* -> further TextBlock *)
+sublist         = clause { clause } ;                (* each at depth d+1 *)
+closing-text    = INDENT(d+1) "~ " TEXT NL { blankline } ;
 
-(* block-tail bildet weitere Einträge in OperativeClause.blocks bzw.
-   SubClause.blocks. Reihenfolge bleibt erhalten. *)
-block-tail        = subclause-list            (* -> SubclausesBlock *)
-                  | tail-text ;               (* -> weiterer TextBlock *)
-
-subclause-list    = subclause { subclause } ;
-subclause         = label " " TEXT NL               (* Chapeau = 1. TextBlock *)
-                    { block-tail } ;
-label             = "(" letterseq ")" ;             (* Ebene s. 3.1 *)
-
-tail-text         = "~ " TEXT NL { blankline } ;
-
-blankline         = NL ;
+blankline       = NL ;
 ```
 
-### 3.1 Ebenen- und Labelregeln
+### 3.1 Depth rules
 
-- Eine `operative-clause` liegt auf **Tiefe 0**. Jede `subclause` liegt auf
-  Tiefe `Elterntiefe + 1`. Maximale Tiefe = **4** (`MAX_SUBCLAUSE_DEPTH`).
-- Das Label einer `subclause` auf Tiefe `d` ist kanonisch
-  `getSubClauseLabel(index, d)`:
+- A top-level operative `clause` is at **depth 0**. Each nested `clause` is
+  at `parent depth + 1`. Maximum depth = **4** (`MAX_SUBCLAUSE_DEPTH`);
+  deeper → `ERR_DEPTH_EXCEEDED`.
+- Display labels (`(a)`, `(i)`, `(aa)`, `(aaa)`) are **not** present in the
+  format. The editor derives them from depth and index via
+  `getSubClauseLabel` when rendering.
+- Preamble items are **flat**: a `- ` indented as a child under
+  `== Preamble ==` is `ERR_PREAMBLE_NESTING` (the schema's `PreambleClause`
+  has no sub-structure).
 
-  | Tiefe | Form | Beispiele |
-  |---|---|---|
-  | 1 | `(a)` Kleinbuchstaben | `(a) (b) … (z) (aa) …` |
-  | 2 | `(i)` röm. Kleinziffern | `(i) (ii) (iii) …` |
-  | 3 | `(aa)` doppelte Kleinbuchstaben | `(aa) (bb) …` |
-  | 4 | `(aaa)` dreifache Kleinbuchstaben | `(aaa) (bbb) …` |
+### 3.2 Closing-text attachment (unambiguous)
 
-- Der Parser leitet die Tiefe **nicht** aus der Labelform ab, sondern aus
-  der Schachtelung (Marker-/`~`-Spalte relativ zum Elternteil, s. 3.2). Die
-  Labelform der Eingabe wird ignoriert; der Serializer vergibt Labels neu.
+A `~ ` line attaches a trailing `TextBlock` to the clause whose
+*children* sit at the `~` line's indentation column — i.e. the clause one
+level shallower than the `~`. Equivalently: it closes the open clause on
+the stack at depth `d` where the `~` is at `INDENT(d+1)`.
 
-### 3.2 Zuordnung über Spalten (eindeutig)
+This disambiguates all three critical cases by marker + column, never by
+whitespace counting alone:
 
-Sei die Markerspalte einer Klausel auf Tiefe `d` gleich `C`.
+- continuation of the chapeau → no marker, content column;
+- a deeper list item → `- ` at a deeper column;
+- a closing sentence of *this* clause → `~ ` at this clause's child column;
+- a closing sentence of an *outer* clause → `~ ` at a shallower column.
 
-- Ihre Unterpunkte (`subclause`, Tiefe `d+1`) haben Markerspalte
-  `C + INDENT`.
-- Ein `~ `-Schlusssatz, der **diese** Klausel terminiert, steht ebenfalls in
-  Spalte `C + INDENT` (visuell auf Höhe ihrer Unterpunkte) und erzeugt einen
-  weiteren `TextBlock` in `blocks[]` *dieser* Klausel — als Geschwister
-  *nach* dem `SubclausesBlock`.
-- Fortsetzungszeilen einer logischen Zeile stehen ≥ `C + INDENT` und tragen
-  keinen Marker.
-
-Damit ist jeder der drei kritischen Fälle eindeutig:
-„Fortsetzung des Chapeau", „neuer Unterpunkt", „Schlusssatz dieser Klausel"
-vs. „Schlusssatz/Unterpunkt einer äußeren Klausel" — entschieden durch
-Markerart + Spalte, nie durch Leerzeichenzählung allein.
+An unmarked, dedented line appearing **after** a sublist is *not* guessed —
+it is `ERR_AMBIGUOUS_TEXT` with a hint to use `~ `. (Strictness here
+protects robustness; the message guides the author/LLM.)
 
 ---
 
-## 4. Abbildung auf das Schema
+## 4. Mapping onto the schema
 
-### 4.1 Front-Matter → `ResolutionHeaderData` / `Resolution`
+### 4.1 Front-matter → `ResolutionHeaderData`
 
-| RES-Key | Zielfeld | Transformation |
+| RES key | Target field | Transformation |
 |---|---|---|
 | `Conference` | `header.conferenceName` | string |
 | `ConferenceTitle` | `header.conferenceTitle` | string |
 | `Committee` | `header.committeeAbbreviation` | string |
 | `CommitteeFullName` | `header.committeeFullName` | string |
-| `Headline` | `Resolution.committeeName` **und** `header.committeeResolutionHeadline` | string |
 | `DocumentNumber` | `header.documentNumber` | string |
 | `Topic` | `header.topic` | string |
 | `AuthoringDelegation` | `header.authoringDelegation` | string |
-| `SponsoringDelegations` | `header.sponsoringDelegations` | Split an `,`, je Element getrimmt, leere verworfen → `string[]` |
-| `LastEdited` | `header.lastEdited` | ISO-8601-String, unverändert übernommen (Schema erlaubt `Date \| string`) |
+| `SponsoringDelegations` | `header.sponsoringDelegations` | split on `,`, each trimmed, empties dropped → `string[]` |
+| `LastEdited` | `header.lastEdited` | ISO-8601 string, passed through (schema allows `Date \| string`) |
 
-- **`Headline`-Mapping (Designentscheidung):** Da das Schema sowohl
-  `Resolution.committeeName` als auch
-  `header.committeeResolutionHeadline` führt, schreibt `Headline` beides.
-  Beim Serialisieren wird der Wert aus
-  `committeeResolutionHeadline ?? committeeName` genommen.
-- Unbekannte Keys: in `warnings` gemeldet, sonst ignoriert (vorwärts­-
-  kompatibel, LLM-tolerant).
-- `header.conferenceEmblem` ist **kein** RES-Key in v1 (siehe Abschnitt 9).
+- Unknown keys: reported in `warnings`, otherwise ignored
+  (forward-compatible, LLM-tolerant).
+- `header.conferenceEmblem` is **not** a RES key in v1 (section 9).
 
-### 4.2 Body → `Resolution`
+### 4.2 `== Header ==` → body headline
 
-- Jede `preamble-clause` → ein `PreambleClause` mit `content = TEXT`.
-- Jede `operative-clause` → ein `OperativeClause`.
-- Chapeau-`TEXT` (auf der Markerzeile) → erster `TextBlock`
-  (erfüllt die Invariante „erster Block ist Text").
-- Eine `subclause-list` → ein `SubclausesBlock`; jede `subclause` rekursiv
-  ein `SubClause` mit eigenem `blocks[]` nach denselben Regeln.
-- Jeder `tail-text` → ein weiterer `TextBlock` in `blocks[]` des
-  terminierten (Sub-)Klausel-Knotens, in Quellreihenfolge.
-- Mehrfaches Alternieren Text/Unterpunkte/Text ist abbildbar. Direkt
-  aufeinanderfolgende gleichartige Blöcke werden über `cleanupBlocks`
-  zusammengeführt (z. B. zwei `~`-Schlusssätze in Folge → ein `TextBlock`).
-- IDs (`generateClauseId`, `generateSubClauseId`, `generateBlockId`) werden
-  beim Parsen frisch erzeugt.
+The single logical line in `== Header ==` (e.g. `THE GENERAL ASSEMBLY`,
+`The Security Council`, `Der Sicherheitsrat`) maps to **both**
+`Resolution.committeeName` **and** `header.committeeResolutionHeadline`
+(the schema carries both; they are the same string in practice). On
+serialize the value is taken from
+`committeeResolutionHeadline ?? committeeName`. An empty header section is
+`WARN_EMPTY_HEADER`.
 
----
+### 4.3 Body → `Resolution`
 
-## 5. Kanonische Serialisierung (deterministisch)
-
-Die kanonische Form ist die **einzige** vom Serializer erzeugte Ausgabe und
-Grundlage des Idempotenz-Tests (7.3).
-
-1. Zeile 1: `%RES 1.0`, danach eine Leerzeile.
-2. Front-Matter: nur **vorhandene** Keys, in der Reihenfolge der Tabelle
-   4.1. Spaltenausrichtung: alle Werte beginnen in Spalte
-   `maxKeyLen + 2`, wobei `maxKeyLen` die Länge des längsten *vorhandenen*
-   Keys ist (deterministisch ⇒ idempotent). Format je Zeile:
-   `Key:` + Padding + `Wert`. `SponsoringDelegations` wird als
-   `, `-getrennte Liste ausgegeben.
-3. `---`, danach eine Leerzeile.
-4. `== Präambel ==`, Leerzeile, dann je Klausel `- ` + Inhalt; danach eine
-   Leerzeile. Die Sektion wird **immer** ausgegeben, auch wenn leer (dann
-   nur Überschrift + Leerzeile).
-5. `== Operativer Teil ==`, Leerzeile, dann die Klauseln.
-6. **Marker & Spalten:**
-   - Operative Klausel: `"%d. " % (1-basierter Index)`, Markerspalte 0.
-   - `subclause` auf Tiefe `d`: Markerspalte `d * INDENT`,
-     Label = `getSubClauseLabel(index, d)`, dann **genau ein** Leerzeichen,
-     dann Inhalt. Labels werden **nicht** auf gleiche Breite gepolstert
-     (Determinismus vor Kosmetik).
-   - `~ `-Schlusssatz einer Klausel auf Tiefe `d`: Spalte
-     `(d + 1) * INDENT`.
-   - Leerer Chapeau-Text: Markerzeile ohne nachfolgendes Leerzeichen
-     (z. B. `2.`), zusätzlich Validierungswarnung (7.2).
-7. **Zeilenumbruch (Wrap):** kanonische Breite = **80** Spalten.
-   Greedy-Algorithmus, Trennung nur an `U+0020`, ein Token wird nie
-   getrennt (auch wenn es 80 überschreitet). Fortsetzungszeilen werden auf
-   die Inhaltsspalte des jeweiligen Markers eingerückt
-   (Operative: Spalte `INDENT`; `subclause` Tiefe `d`: Spalte
-   `(d + 1) * INDENT`; `~`: Spalte `(d + 1) * INDENT`). Der Algorithmus ist
-   vollständig durch (Eingabetext, Startspalte, Breite 80) bestimmt ⇒
-   `parse ∘ serialize` ist byte-stabil.
-8. Genau eine Leerzeile zwischen Top-Level-Klauseln; genau ein
-   abschließendes `LF` am Dateiende; kein Trailing Whitespace.
+- Each `preamble-clause` → one `PreambleClause` with `content = TEXT`.
+- Each top-level `clause` → one `OperativeClause`.
+- Chapeau `TEXT` (text after `- ` on the marker line) → first `TextBlock`
+  (satisfies the "first block is text" invariant).
+- A `sublist` → one `SubclausesBlock`; each child `clause` recursively a
+  `SubClause` with its own `blocks[]`.
+- Each `closing-text` → a further `TextBlock` on the terminated
+  (sub)clause node, in source order.
+- Alternating text / sublist / text is representable. Directly adjacent
+  same-kind blocks are merged via `cleanupBlocks` (e.g. two successive
+  `~` lines → one `TextBlock`).
+- IDs (`generateClauseId`, `generateSubClauseId`, `generateBlockId`) are
+  freshly minted on parse.
 
 ---
 
-## 6. Tolerante Eingabe (über die kanonische Form hinaus)
+## 5. Canonical serialization (deterministic)
 
-Der Parser akzeptiert zusätzlich und normalisiert nach Schema:
+The canonical form is the only output the serializer produces and the
+basis of the idempotence test (7.3).
 
-- **Nummerierung/Labels:** `1.` `1)` `1` · `a.` `a)` `(a)` · `i.` `(i)` ·
-  `-` `*` `•` (Bullet). Tatsächliche Ziffern/Buchstaben werden ignoriert;
-  die Position bestimmt den Index, der Serializer nummeriert neu.
-- **Einrückung:** beliebige konsistente Schrittweite; Tiefe wird relativ zur
-  Elternklausel bestimmt, nicht absolut. Tabs erlaubt (s. 2).
-- **Leerzeilen:** zwischen Klauseln optional/mehrfach.
-- **Front-Matter:** beliebige Leerraummenge um `:`; Keys
-  case-insensitiv gematcht, kanonisch case-korrekt re-serialisiert.
-- **Sektionsüberschriften:** `== Präambel ==` / `== Operativer Teil ==`
-  case-insensitiv; alternativ engl. `== Preamble ==` /
-  `== Operative ==` als Aliase.
-- **Trailing-Interpunktion** (`,` `;` `.` am Klauselende) bleibt **erhalten**
-  (sie ist Resolutionsinhalt) — anders als im alten `resolutionParser.ts`,
-  der sie strippte.
-
-Was der Parser **nicht** repariert (→ Fehler, Abschnitt 7): Tiefe > 4,
-Klausel ohne Chapeau auf einer Ebene, die ein Chapeau erfordert (nur
-Warnung + leerer TextBlock), fehlende Pflichtzeile `%RES`, fehlendes `---`.
+1. Line 1: `%RES 1.0`, then one blank line.
+2. Front-matter: only **present** keys, in the order of table 4.1.
+   Alignment: every value starts at column `maxKeyLen + 2`, where
+   `maxKeyLen` is the longest *present* key (deterministic ⇒ idempotent).
+   Per line: `Key:` + padding + value. `SponsoringDelegations` is emitted
+   as a `, `-separated list.
+3. `---`, then one blank line.
+4. `== Header ==`, blank line, the headline line, blank line. Always
+   emitted.
+5. `== Preamble ==`, blank line, then each clause as `- ` + content,
+   then a blank line. Always emitted, even if empty.
+6. `== Operative ==`, blank line, then the clauses.
+7. **Markers & columns:**
+   - every list item: `- ` marker at column `depth * INDENT`
+     (`INDENT = 2`), chapeau on the same line;
+   - a `~ ` closing text of a clause at depth `d`: column
+     `(d + 1) * INDENT`;
+   - empty chapeau: marker line without trailing space (`-`), plus
+     `WARN_EMPTY_CHAPEAU`.
+8. **Wrapping:** canonical width = **80** columns. Greedy, break only at
+   `U+0020`, never split a token (even if it exceeds 80). Continuation
+   lines are indented to the marker's content column
+   (`depth * INDENT + 2`). The algorithm is fully determined by
+   (text, start column, width 80) ⇒ `parse ∘ serialize` is byte-stable.
+9. Exactly one blank line between top-level operative clauses; exactly one
+   trailing `LF`; no trailing whitespace.
 
 ---
 
-## 7. Validität (programmatisch entscheidbar)
+## 6. Lenient input (beyond the canonical form)
 
-`validate(text)` ist genau dann `valid`, wenn alle vier Stufen bestehen:
+The parser additionally accepts and normalizes to schema:
 
-### 7.1 Syntaxstufe
-Tokenizer/Parser laufen ohne `ResError` durch (siehe Fehlerkatalog).
+- **List markers:** `- ` `* ` `• ` are all accepted; serialized as `- `.
+  Any leftover ordinal an author types (`1.`, `a)`, `(i)`) at the start of
+  the content is **stripped** and ignored — order comes from position, the
+  display label from depth.
+- **Indentation:** any consistent positive step; depth inferred relatively
+  (2.2); tabs allowed.
+- **Blank lines:** optional / repeated between clauses.
+- **Front-matter:** any whitespace around `:`; keys matched
+  case-insensitively, re-serialized in canonical casing.
+- **Section headings:** `== Header ==`, `== Preamble ==`,
+  `== Operative ==` matched case-insensitively. No localized aliases in v1
+  (international format, English keywords only).
+- **Trailing punctuation** (`,` `;` `.`) is **preserved** — it is
+  resolution content (unlike the legacy `resolutionParser.ts`, which
+  stripped it).
 
-### 7.2 Strukturstufe
-- `ResolutionSchema.safeParse(result)` (Zod) erfolgreich.
-- Jede `OperativeClause`/`SubClause`: `blocks[0].type === 'text'`.
-- Maximale Schachteltiefe ≤ `MAX_SUBCLAUSE_DEPTH` (4).
-- **Warnungen** (gültig, aber gemeldet): leerer Chapeau-TextBlock;
-  unbekannter Front-Matter-Key; leere Sektion.
+The parser does **not** repair (→ errors, section 7): depth > 4, nested
+preamble items, ambiguous text after a sublist, missing `%RES`, missing
+`---`, non-monotone indentation.
 
-### 7.3 Idempotenzstufe
-`serialize(parse(text).resolution, parse(text).header)` erneut geparst und
-serialisiert ergibt **byte-identische** Ausgabe wie der erste
-`serialize`-Lauf. Formal: `S = serialize ∘ parse`. Gefordert:
-`S(S(text)) === S(text)`.
+---
 
-### 7.4 Round-Trip-Stufe (Modelltreue)
-Für eine beliebige schemavalide `Resolution R` (mit normalisierten IDs)
-gilt: `parse(serialize(R)).resolution` ist **strukturell gleich** `R`
-(IDs ausgenommen; `cleanupBlocks` auf beiden Seiten angewандt).
+## 7. Validity (programmatically decidable)
 
-### Fehlerkatalog (`ResError`, je mit Zeile/Spalte)
+`validate(text)` is `valid` iff all four stages pass:
 
-| Code | Bedingung |
+### 7.1 Syntax stage
+Tokenizer/parser complete without a `ResError` (see catalog).
+
+### 7.2 Structural stage
+- `ResolutionSchema.safeParse(result)` (Zod) succeeds.
+- Every `OperativeClause`/`SubClause`: `blocks[0].type === 'text'`.
+- Max nesting depth ≤ `MAX_SUBCLAUSE_DEPTH` (4).
+- **Warnings** (valid but reported): empty chapeau text block; empty
+  header; unknown front-matter key; empty section.
+
+### 7.3 Idempotence stage
+With `S = serialize ∘ parse`: required `S(S(text)) === S(text)`
+(byte-identical).
+
+### 7.4 Round-trip stage (model fidelity)
+For any schema-valid `Resolution R` (IDs normalized):
+`parse(serialize(R)).resolution` is **structurally equal** to `R`
+(IDs excluded; `cleanupBlocks` applied on both sides).
+
+### Error catalog (`ResError`, each with line/column)
+
+| Code | Condition |
 |---|---|
-| `ERR_MISSING_HEADER` | Zeile 1 ≠ `%RES <ver>` |
-| `ERR_UNSUPPORTED_VERSION` | Major-Version > unterstützt |
-| `ERR_MISSING_FRONTMATTER_END` | Kein `---` vor erster Sektion |
-| `ERR_UNKNOWN_SECTION` | `== … ==` weder Präambel noch Operativ (inkl. Aliase) |
-| `ERR_DEPTH_EXCEEDED` | Schachteltiefe > 4 |
-| `ERR_ORPHAN_TAIL` | `~ ` ohne vorausgehenden Unterpunktblock auf passender Spalte |
-| `ERR_ORPHAN_SUBCLAUSE` | Unterpunkt ohne Elternklausel |
-| `ERR_EMPTY_DOCUMENT` | Weder Präambel- noch Operativklauseln |
-| `ERR_BAD_FRONTMATTER` | Zeile vor `---` ist weder `Key: Wert` noch leer |
+| `ERR_MISSING_HEADER` | line 1 ≠ `%RES <ver>` |
+| `ERR_UNSUPPORTED_VERSION` | major version newer than supported |
+| `ERR_MISSING_FRONTMATTER_END` | no `---` before first section |
+| `ERR_UNKNOWN_SECTION` | `== … ==` not Header/Preamble/Operative |
+| `ERR_DEPTH_EXCEEDED` | nesting depth > 4 |
+| `ERR_BAD_INDENT` | indentation not resolvable to a monotone stack |
+| `ERR_PREAMBLE_NESTING` | indented sub-item under `== Preamble ==` |
+| `ERR_AMBIGUOUS_TEXT` | unmarked dedented line after a sublist (use `~ `) |
+| `ERR_ORPHAN_TAIL` | `~ ` with no matching open clause at its column |
+| `ERR_EMPTY_DOCUMENT` | neither preamble nor operative clauses |
+| `ERR_BAD_FRONTMATTER` | pre-`---` line is neither `Key: Value` nor blank |
 
-| Code | (Warnung) Bedingung |
+| Code | (Warning) condition |
 |---|---|
-| `WARN_EMPTY_CHAPEAU` | (Sub-)Klausel ohne Chapeau-Text |
-| `WARN_UNKNOWN_KEY` | Unbekannter Front-Matter-Key |
-| `WARN_EMPTY_SECTION` | Sektion ohne Klauseln |
+| `WARN_EMPTY_CHAPEAU` | (sub)clause without chapeau text |
+| `WARN_EMPTY_HEADER` | `== Header ==` empty |
+| `WARN_UNKNOWN_KEY` | unknown front-matter key |
+| `WARN_EMPTY_SECTION` | section without clauses |
 
 ---
 
-## 8. Kommentierte Beispiele
+## 8. Worked examples
 
 ### 8.1 Minimal
 
 ```
 %RES 1.0
 
-Headline: Der Sicherheitsrat
 ---
 
-== Präambel ==
+== Header ==
 
-- in Bekräftigung der Charta der Vereinten Nationen,
+THE GENERAL ASSEMBLY
 
-== Operativer Teil ==
+== Preamble ==
 
-1. fordert die Einstellung der Feindseligkeiten;
+- Reaffirming the Charter of the United Nations,
+
+== Operative ==
+
+- Calls upon all Member States to honour their obligations;
 ```
 
-→ `Resolution { committeeName: "Der Sicherheitsrat", preamble: [1×],
-operative: [1×] }`. Beide Sektionen vorhanden, `blocks[0]` jeweils Text.
+→ `Resolution { committeeName: "THE GENERAL ASSEMBLY", preamble: [1],
+operative: [1] }`. All three sections present, `blocks[0]` text.
 
-### 8.2 Der harte Fall: Text → Unterpunkte → Schlusssatz (rekursiv)
-
-```
-2. beschließt,
-   (a) eine unabhängige Kommission einzusetzen, die
-       (i) jährlich Bericht erstattet;
-       (ii) konkrete Empfehlungen ausspricht;
-       ~ wobei die Vertraulichkeit gewahrt bleibt;
-   (b) die Finanzierung aus dem ordentlichen Haushalt sicherzustellen;
-   ~ und mit der Angelegenheit aktiv befasst zu bleiben;
-```
-
-Resultierende `blocks`-Struktur:
+### 8.2 The hard case: text → sublist → closing text (recursive)
 
 ```
-OperativeClause #2
+== Operative ==
+
+- decides to
+  - establish an independent commission that
+    - reports annually to the General Assembly;
+    - issues concrete recommendations;
+    ~ while preserving the confidentiality of sources;
+  - secures the necessary funding from the regular budget;
+  ~ and to remain actively seized of the matter;
+
+- requests the Secretary-General to report within 90 days.
+```
+
+Resulting block structure:
+
+```
+OperativeClause #1
 └─ blocks:
-   ├─ TextBlock        "beschließt,"
+   ├─ TextBlock        "decides to"
    ├─ SubclausesBlock
-   │  ├─ SubClause (a)
+   │  ├─ SubClause                      (col 2, depth 1)
    │  │  └─ blocks:
-   │  │     ├─ TextBlock       "eine unabhängige Kommission einzusetzen, die"
+   │  │     ├─ TextBlock      "establish an independent commission that"
    │  │     ├─ SubclausesBlock
-   │  │     │  ├─ SubClause (i)  → TextBlock "jährlich Bericht erstattet;"
-   │  │     │  └─ SubClause (ii) → TextBlock "konkrete Empfehlungen ausspricht;"
-   │  │     └─ TextBlock       "wobei die Vertraulichkeit gewahrt bleibt;"   ← ~ @ Spalte 6 schließt (a)
-   │  └─ SubClause (b)
-   │     └─ blocks: [ TextBlock "die Finanzierung aus dem ordentlichen Haushalt sicherzustellen;" ]
-   └─ TextBlock        "und mit der Angelegenheit aktiv befasst zu bleiben;" ← ~ @ Spalte 3 schließt Klausel 2
+   │  │     │  ├─ SubClause → TextBlock "reports annually to the General Assembly;"
+   │  │     │  └─ SubClause → TextBlock "issues concrete recommendations;"
+   │  │     └─ TextBlock      "while preserving the confidentiality of sources;"
+   │  │                                  ← ~ @ col 4 closes the depth-1 clause
+   │  └─ SubClause → TextBlock "secures the necessary funding from the regular budget;"
+   └─ TextBlock        "and to remain actively seized of the matter;"
+                                         ← ~ @ col 2 closes operative clause #1
+OperativeClause #2 → TextBlock "requests the Secretary-General to report within 90 days."
 ```
 
-Spaltenlogik: `2.` @0 → Unterpunkte @3 → deren Unterpunkte @6. Inneres `~`
-@6 (= Unterpunktspalte von `(a)`) terminiert `(a)`. Äußeres `~` @3
-(= Unterpunktspalte von Klausel 2) terminiert Klausel 2. Vollständig
-markerbestimmt.
+Column logic: `- decides` @0 → children @2 → their children @4. The inner
+`~` @4 (= child column of the depth-1 clause) closes that clause. The outer
+`~` @2 (= child column of clause #1) closes clause #1. Fully
+marker+column-determined; no ordinals anywhere.
 
-### 8.3 Tolerante Eingabe → kanonische Ausgabe
+### 8.3 Lenient input → canonical output
 
-Eingabe (lockere Nummerierung, 2-Leerzeichen-Indent, Bullets):
+Input (mixed markers, 4-space step, stray ordinals, lowercase sections):
 
 ```
 %res 1.0
-headline: Der Sicherheitsrat
 ---
+== header ==
+The Security Council
 == preamble ==
-* in Bekräftigung der Charta,
+* Recalling its resolution 2025 (2026),
 == operative ==
-1) fordert X;
-2) beschließt,
-  a) Y;
-  b) Z;
+* 1. Demands an immediate ceasefire;
+* 2. Decides to
+        a) deploy observers;
+        b) review the situation;
 ```
 
-Kanonische Ausgabe (nach `serialize ∘ parse`):
+Canonical output (after `serialize ∘ parse`):
 
 ```
 %RES 1.0
 
-Headline: Der Sicherheitsrat
 ---
 
-== Präambel ==
+== Header ==
 
-- in Bekräftigung der Charta,
+The Security Council
 
-== Operativer Teil ==
+== Preamble ==
 
-1. fordert X;
+- Recalling its resolution 2025 (2026),
 
-2. beschließt,
-   (a) Y;
-   (b) Z;
+== Operative ==
+
+- Demands an immediate ceasefire;
+
+- Decides to
+  - deploy observers;
+  - review the situation;
 ```
 
-Idempotent: erneutes `parse`/`serialize` liefert dieselben Bytes.
+The stray `1.` / `2.` / `a)` / `b)` are stripped (order is positional,
+labels are derived on render). Idempotent: re-`parse`/`serialize` yields
+identical bytes.
 
 ---
 
-## 9. Bewusst ausgeklammert (Begründung)
+## 9. Deliberately out of scope (rationale)
 
-- **`AmendmentOverlay`** ist Review-/Kollaborationszustand, kein
-  Dokumentinhalt. Gehört in den verlustfreien JSON-Kanal, nicht in ein
-  menschlich editiertes Austauschformat.
-- **Interne IDs**: dienen Cursor-/CRDT-Erhalt; im Format würden sie nur
-  Rauschen erzeugen und LLM-Ausgaben verschlechtern. Re-Import erzeugt neue
-  IDs; `replaceResolution` macht den strukturellen Diff.
-- **Kommentarsyntax**: in v1 weggelassen, um Parsing-Mehrdeutigkeiten und
-  Idempotenzbrüche zu vermeiden. Kann in v1.x additiv ergänzt werden
-  (Versionsfeld `%RES` deckt das ab).
-- **`conferenceEmblem`** (SVG-Data-URL): potenziell sehr lang, kein
-  menschlich editierbarer Inhalt. Bleibt im JSON-Kanal; bei Bedarf später
-  als optionaler `Emblem:`-Key nachrüstbar.
+- **`AmendmentOverlay`** is review/collaboration state, not document
+  content. Belongs in the lossless JSON channel, not a human-edited
+  interchange format.
+- **Internal IDs** serve cursor/CRDT preservation; in the format they would
+  only add noise and degrade LLM output. Re-import mints new IDs;
+  `replaceResolution` performs the structural diff.
+- **Comment syntax** omitted in v1 to avoid parsing ambiguity and
+  idempotence breakage; can be added additively in v1.x (the `%RES`
+  version field covers this).
+- **`conferenceEmblem`** (SVG data URL): potentially very long, not
+  human-editable content. Stays in the JSON channel; can later be added as
+  an optional `Emblem:` key.
 
 ---
 
-## 10. Öffentliche API (Vertrag, Implementierung folgt separat)
+## 10. Public API (contract; implementation to follow separately)
 
 ```ts
 parse(text: string): {
@@ -439,7 +489,7 @@ parse(text: string): {
   warnings: ResWarning[];
 };
 
-serialize(resolution: Resolution, header?: ResolutionHeaderData): string; // kanonisch
+serialize(resolution: Resolution, header?: ResolutionHeaderData): string; // canonical
 
 validate(text: string):
   | { valid: true;  resolution: Resolution; header: ResolutionHeaderData; warnings: ResWarning[] }
@@ -448,7 +498,7 @@ validate(text: string):
 declare const RES_VERSION = '1.0';
 ```
 
-Abhängigkeitsrichtung ausschließlich **`res-markup` → `schema/resolution.ts`**.
-Kein Svelte-, Store- oder Y.js-Import, damit das Modul später verlustfrei als
-eigenständiges Paket extrahierbar bleibt.
+Dependency direction is strictly **`res-markup` → `schema/resolution.ts`**.
+No Svelte, store or Y.js imports, so the module remains losslessly
+extractable as a standalone package later.
 ```
