@@ -18,27 +18,25 @@ important audiences:
 
 1. **Humans** — readable and editable; a file looks like the finished
    resolution.
-2. **LLMs** — robustly writable; structure is conveyed through
-   line-leading **markers** plus simple relative indentation, never through
-   absolute whitespace counting.
+2. **LLMs** — robustly writable; structure is conveyed purely through
+   line-leading **markers**, never through whitespace.
 3. **Programs** — unambiguously parseable, validatable and serializable;
    every file maps losslessly onto the `Resolution` schema.
 
 Core principles:
 
-- **Markers determine the *kind*; indentation determines only *depth and
-  attachment*.** Whether a line is a clause item, a chapeau continuation,
-  or a closing text block is decided by its marker, never by counting
-  spaces.
+- **Markers determine both *kind* and *depth*; indentation is
+  non-significant.** Depth is encoded by the *number* of leading marker
+  characters (`-`, `--`, `---`, …), not by counting spaces. Whitespace,
+  copy-paste reflow and leading-space drift can never change structure.
 - **No ordinals in the format.** There are no `1.` / `(a)` / `(i)`
-  labels. A uniform `- ` list marker is used at every level; nesting is
-  expressed by indentation. Display labels are derived later from depth and
-  index via `getSubClauseLabel` — they are not part of the interchange
-  format. This removes the entire class of "how do I number the next level"
-  mistakes.
-- **Lenient on input, canonical on output.** The parser accepts a broad
-  range of inputs (any consistent indent step, optional blank lines,
-  loose section casing). The serializer emits exactly one canonical form.
+  labels. Display labels are derived later from depth and index via
+  `getSubClauseLabel` — they are not part of the interchange format. This
+  removes the entire class of "how do I number the next level" mistakes.
+- **Lenient on input, canonical on output.** The parser ignores all
+  indentation and accepts loose section casing, alternate blank-line
+  spacing and stray ordinals. The serializer emits exactly one canonical
+  form (which *does* indent, purely for human readability — see §5).
 - **Validity is programmatically decidable** (section 7).
 - **IDs are not content.** `parse` mints fresh IDs; `serialize` never emits
   IDs. Cursor/collaboration preservation is the job of `replaceResolution`,
@@ -47,75 +45,58 @@ Core principles:
 Deliberately **out of v1**: amendments (`AmendmentOverlay`), internal IDs,
 comment syntax, embedded conference emblem. Rationale in section 9.
 
-### 1.1 Accepted tradeoff: depth via indentation
+### 1.1 Why marker-counted depth
 
-Dropping ordinals means nesting depth is now carried by indentation — the
-property we criticized about YAML. This is acceptable because:
+Earlier drafts encoded depth by indentation — the classic YAML footgun.
+Counting leading `-` characters instead makes structure **fully
+marker-determined**:
 
-- depth is inferred **relatively** (any consistent increase = one level
-  deeper, exactly like Markdown lists, which LLMs produce reliably) — not
-  by absolute column arithmetic;
-- the **kind** of every line is still 100 % marker-determined (`- ` = list
-  item, `~ ` = closing text, no marker = continuation);
-- maximum depth is hard-capped at 4 (`MAX_SUBCLAUSE_DEPTH`), so drift
-  cannot silently produce invalid structure — it produces a precise error.
+- LLMs reliably emit small marker repetitions (`-`, `--`, `---`), the same
+  way they reliably emit Markdown heading levels (`#`, `##`);
+- the format is completely whitespace-insensitive — indentation becomes a
+  cosmetic, parser-ignored aid, so humans *may* indent for readability
+  while machines need not;
+- maximum depth is hard-capped (max 5 hyphens, §3.1), and a level skip is a
+  precise error rather than silent corruption.
 
-The real-world error source being eliminated (mislabeling deeper levels)
-is larger than the one introduced (indentation drift, bounded and
-detectable).
+This keeps the benefits of an outline format with none of the indentation
+fragility.
 
 ---
 
 ## 2. Lexical structure
 
 - **Encoding:** UTF-8.
-- **Line endings:** `CRLF` and `CR` are normalized to `LF` on read.
-  Canonical output uses `LF` only.
+- **Line endings:** `CRLF`/`CR` normalized to `LF` on read. Canonical
+  output uses `LF` only.
 - **Trailing whitespace** on every line is discarded on read.
-- **Indent unit:** canonical output uses **2 spaces per nesting level**
-  (`INDENT = 2`), matching common list conventions. On input, the indent
-  step may be any positive constant; depth is inferred relatively (2.2).
-  A tab counts as `INDENT` spaces.
-- **Column** is 0-based and refers to the first non-whitespace character of
-  a line.
+- **Leading whitespace is non-significant** and discarded before marker
+  detection. (The canonical serializer re-adds cosmetic indentation; see
+  §5.)
 - **Logical line:** a marker line plus any directly following
-  *continuation lines* (non-blank lines with no marker, indented at least
-  to the marker's content column, no blank line in between). The contents
-  of a logical line are joined with exactly one space (`U+0020`).
-- **Blank line:** a line empty after trimming. It terminates a logical
-  line / block. Several consecutive blank lines are equivalent to one.
+  *continuation lines* (non-blank lines that do not start with a marker, no
+  blank line in between). Contents are joined with exactly one space
+  (`U+0020`).
+- **Blank line:** empty after trimming; terminates a logical line / block.
+  Consecutive blank lines are equivalent to one.
 
-### 2.1 Markers (line-leading, after optional indentation)
+### 2.1 Markers (line-leading, after stripped indentation)
 
 | Marker | Meaning | Canonical regex |
 |---|---|---|
 | `%RES <ver>` | Format header, **required, line 1** | `^%RES \d+\.\d+$` |
-| `Key: Value` | Front-matter pair (only before `---`) | `^[A-Za-z][A-Za-z0-9]*: .*$` |
-| `---` | End of front-matter | `^---$` |
-| `== <Section> ==` | Section heading | `^== .+ ==$` |
-| `- ` | List item (preamble clause / operative clause / sub-clause) | `^- \S` |
-| `~ ` | Closing text block after a sub-list | `^~ \S` |
+| `Key: Value` | Front-matter pair (only before the first section) | `^[A-Za-z][A-Za-z0-9]*: .*$` |
+| `== <Section> ==` | Section heading; also ends front-matter | `^== .+ ==$` |
+| `-`…`-----` + space | List item; **depth = hyphen run length** | `^-{1,5} \S` |
+| `~`…`~~~~~` + space | Closing text block; **depth = tilde run length** | `^~{1,5} \S` |
 
-Escaping: if a **content line** must literally begin with one of the marker
-forms above, prefix it with a single backslash `\`. The parser strips
-exactly one leading `\`. (Practically never needed in prose.)
-
-### 2.2 Relative depth inference
-
-The parser maintains a stack of open list items, each remembering its
-indentation column. For a `- ` line at column `I`:
-
-- if `I` is greater than the current top item's column → it is a **child**
-  (depth = parent depth + 1);
-- if `I` equals the column of some item on the stack → it is a **sibling**
-  of that item (pop deeper levels);
-- otherwise (`I` between two known columns, or below all) → pop to the
-  nearest shallower known column and treat as its child / sibling
-  accordingly.
-
-Only the *relative* ordering of columns matters; the absolute step size is
-irrelevant. Inconsistent indentation that cannot be resolved to a monotone
-stack (e.g. a child less indented than its parent) is `ERR_BAD_INDENT`.
+- A marker run is consecutive identical characters with **no internal
+  spaces**, followed by one space, then content.
+- There is **no** `---` front-matter terminator: front-matter ends at the
+  first `== … ==` heading. (This also removes any collision between the
+  old terminator and a depth-3 list marker.)
+- Escaping: if a content line must literally begin with a marker form,
+  prefix one backslash `\`; the parser strips exactly one leading `\`.
 
 ---
 
@@ -123,12 +104,11 @@ stack (e.g. a child less indented than its parent) is `ERR_BAD_INDENT`.
 
 Notation: `{ x }` = 0..n, `[ x ]` = optional, `|` = alternative, `" "` =
 literal, `NL` = newline, `TEXT` = non-empty joined content of a logical
-line, `INDENT(d)` = indentation for depth `d`.
+line. `DASH(d)` = exactly `d` hyphens; `TILDE(d)` = exactly `d` tildes.
 
 ```ebnf
 document        = "%RES " version NL { blankline }
                   { kv-pair }
-                  "---" NL { blankline }
                   header-section
                   preamble-section
                   operative-section ;
@@ -143,52 +123,52 @@ header-section    = "== Header ==" NL { blankline }
 
 preamble-section  = "== Preamble ==" NL { blankline }
                     { preamble-clause } ;
-preamble-clause   = "- " TEXT NL { blankline } ;     (* flat, no nesting *)
+preamble-clause   = DASH(1) " " TEXT NL { blankline } ;   (* flat: depth 1 only *)
 
 operative-section = "== Operative ==" NL { blankline }
-                    { clause } ;
+                    { clause(1) } ;
 
-(* A clause maps to OperativeClause/SubClause. blocks[] order is preserved. *)
-clause          = INDENT(d) "- " TEXT NL             (* chapeau = 1st TextBlock *)
-                  { block-tail } ;
-block-tail      = sublist                            (* -> SubclausesBlock *)
-                | closing-text ;                     (* -> further TextBlock *)
-sublist         = clause { clause } ;                (* each at depth d+1 *)
-closing-text    = INDENT(d+1) "~ " TEXT NL { blankline } ;
+(* clause(d) maps to OperativeClause (d=1) / SubClause (d>=2).
+   blocks[] order is preserved. *)
+clause(d)       = DASH(d) " " TEXT NL                 (* chapeau = 1st TextBlock *)
+                  { block-tail(d) } ;
+block-tail(d)   = sublist(d+1)                        (* -> SubclausesBlock *)
+                | closing-text(d) ;                   (* -> further TextBlock *)
+sublist(k)      = clause(k) { clause(k) } ;
+closing-text(d) = TILDE(d) " " TEXT NL { blankline } ;
 
 blankline       = NL ;
 ```
 
 ### 3.1 Depth rules
 
-- A top-level operative `clause` is at **depth 0**. Each nested `clause` is
-  at `parent depth + 1`. Maximum depth = **4** (`MAX_SUBCLAUSE_DEPTH`);
-  deeper → `ERR_DEPTH_EXCEEDED`.
-- Display labels (`(a)`, `(i)`, `(aa)`, `(aaa)`) are **not** present in the
-  format. The editor derives them from depth and index via
-  `getSubClauseLabel` when rendering.
-- Preamble items are **flat**: a `- ` indented as a child under
-  `== Preamble ==` is `ERR_PREAMBLE_NESTING` (the schema's `PreambleClause`
-  has no sub-structure).
+- A top-level operative clause is **depth 1** (`-`). Each nesting level
+  adds one hyphen. Mapping to the schema: depth 1 → `OperativeClause`;
+  depth `n ≥ 2` → `SubClause` at sub-clause nesting `n − 1`.
+- `MAX_SUBCLAUSE_DEPTH = 4` ⇒ maximum **5 hyphens** (`-----`). More →
+  `ERR_DEPTH_EXCEEDED`.
+- A child clause must have exactly `parent + 1` hyphens. A jump (e.g. `-`
+  directly to `---`) is `ERR_DEPTH_SKIP`. Fewer-or-equal hyphens than the
+  current clause means "pop to that depth and continue as a sibling".
+- Display labels (`(a)`, `(i)`, `(aa)`, `(aaa)`) are **not** present; the
+  editor derives them from depth and index via `getSubClauseLabel`.
+- Preamble items are **flat**: a preamble line with more than one hyphen is
+  `ERR_PREAMBLE_NESTING`.
 
-### 3.2 Closing-text attachment (unambiguous)
+### 3.2 Closing-text attachment (unambiguous by tilde count)
 
-A `~ ` line attaches a trailing `TextBlock` to the clause whose
-*children* sit at the `~` line's indentation column — i.e. the clause one
-level shallower than the `~`. Equivalently: it closes the open clause on
-the stack at depth `d` where the `~` is at `INDENT(d+1)`.
+`closing-text(d)` (a `~`×`d` line) appends a trailing `TextBlock` to the
+open clause at depth `d` on the current branch — i.e. `~~` closes the
+nearest open depth-2 clause, `~` the depth-1 clause. The tilde count alone
+determines attachment; no whitespace or position heuristic is involved.
+If no open clause at depth `d` exists → `ERR_ORPHAN_TAIL`.
 
-This disambiguates all three critical cases by marker + column, never by
-whitespace counting alone:
+This disambiguates every case purely by marker:
 
-- continuation of the chapeau → no marker, content column;
-- a deeper list item → `- ` at a deeper column;
-- a closing sentence of *this* clause → `~ ` at this clause's child column;
-- a closing sentence of an *outer* clause → `~ ` at a shallower column.
-
-An unmarked, dedented line appearing **after** a sublist is *not* guessed —
-it is `ERR_AMBIGUOUS_TEXT` with a hint to use `~ `. (Strictness here
-protects robustness; the message guides the author/LLM.)
+- chapeau continuation → no marker;
+- a deeper item → more hyphens;
+- a closing sentence of *this* clause → tildes matching *this* depth;
+- a closing sentence of an *outer* clause → fewer tildes.
 
 ---
 
@@ -208,33 +188,29 @@ protects robustness; the message guides the author/LLM.)
 | `SponsoringDelegations` | `header.sponsoringDelegations` | split on `,`, each trimmed, empties dropped → `string[]` |
 | `LastEdited` | `header.lastEdited` | ISO-8601 string, passed through (schema allows `Date \| string`) |
 
-- Unknown keys: reported in `warnings`, otherwise ignored
-  (forward-compatible, LLM-tolerant).
+- Front-matter is every `Key: Value` line between `%RES …` and the first
+  `== … ==` heading. Unknown keys: reported in `warnings`, otherwise
+  ignored (forward-compatible, LLM-tolerant).
 - `header.conferenceEmblem` is **not** a RES key in v1 (section 9).
 
 ### 4.2 `== Header ==` → body headline
 
 The single logical line in `== Header ==` (e.g. `THE GENERAL ASSEMBLY`,
-`The Security Council`, `Der Sicherheitsrat`) maps to **both**
-`Resolution.committeeName` **and** `header.committeeResolutionHeadline`
-(the schema carries both; they are the same string in practice). On
-serialize the value is taken from
-`committeeResolutionHeadline ?? committeeName`. An empty header section is
+`The Security Council`) maps to **both** `Resolution.committeeName`
+**and** `header.committeeResolutionHeadline`. On serialize the value is
+taken from `committeeResolutionHeadline ?? committeeName`. Empty → 
 `WARN_EMPTY_HEADER`.
 
 ### 4.3 Body → `Resolution`
 
 - Each `preamble-clause` → one `PreambleClause` with `content = TEXT`.
-- Each top-level `clause` → one `OperativeClause`.
-- Chapeau `TEXT` (text after `- ` on the marker line) → first `TextBlock`
-  (satisfies the "first block is text" invariant).
+- Each top-level `clause(1)` → one `OperativeClause`; chapeau `TEXT` →
+  first `TextBlock` (satisfies the "first block is text" invariant).
 - A `sublist` → one `SubclausesBlock`; each child `clause` recursively a
   `SubClause` with its own `blocks[]`.
-- Each `closing-text` → a further `TextBlock` on the terminated
-  (sub)clause node, in source order.
-- Alternating text / sublist / text is representable. Directly adjacent
-  same-kind blocks are merged via `cleanupBlocks` (e.g. two successive
-  `~` lines → one `TextBlock`).
+- Each `closing-text` → a further `TextBlock` on the terminated node, in
+  source order.
+- Adjacent same-kind blocks are merged via `cleanupBlocks`.
 - IDs (`generateClauseId`, `generateSubClauseId`, `generateBlockId`) are
   freshly minted on parse.
 
@@ -246,29 +222,26 @@ The canonical form is the only output the serializer produces and the
 basis of the idempotence test (7.3).
 
 1. Line 1: `%RES 1.0`, then one blank line.
-2. Front-matter: only **present** keys, in the order of table 4.1.
-   Alignment: every value starts at column `maxKeyLen + 2`, where
-   `maxKeyLen` is the longest *present* key (deterministic ⇒ idempotent).
-   Per line: `Key:` + padding + value. `SponsoringDelegations` is emitted
-   as a `, `-separated list.
-3. `---`, then one blank line.
-4. `== Header ==`, blank line, the headline line, blank line. Always
-   emitted.
-5. `== Preamble ==`, blank line, then each clause as `- ` + content,
-   then a blank line. Always emitted, even if empty.
-6. `== Operative ==`, blank line, then the clauses.
-7. **Markers & columns:**
-   - every list item: `- ` marker at column `depth * INDENT`
-     (`INDENT = 2`), chapeau on the same line;
-   - a `~ ` closing text of a clause at depth `d`: column
-     `(d + 1) * INDENT`;
-   - empty chapeau: marker line without trailing space (`-`), plus
-     `WARN_EMPTY_CHAPEAU`.
+2. Front-matter: only **present** keys, in the order of table 4.1. Every
+   value starts at column `maxKeyLen + 2` (longest present key;
+   deterministic ⇒ idempotent). `SponsoringDelegations` emitted as a
+   `, `-separated list.
+3. `== Header ==`, blank line, headline line, blank line. Always emitted.
+4. `== Preamble ==`, blank line, each clause `- ` + content, blank line.
+   Always emitted, even if empty.
+5. `== Operative ==`, blank line, then the clauses.
+6. **Markers:** a clause at depth `d` is written with `d` hyphens; a
+   closing text of a depth-`d` clause with `d` tildes; one space then
+   content. Empty chapeau: marker without trailing space, plus
+   `WARN_EMPTY_CHAPEAU`.
+7. **Cosmetic indentation (parser-ignored, but deterministic so still
+   idempotent):** a depth-`d` line is indented `(d − 1) × 2` spaces. A
+   closing text aligns with the clause it closes (same indentation as that
+   clause's hyphen marker).
 8. **Wrapping:** canonical width = **80** columns. Greedy, break only at
-   `U+0020`, never split a token (even if it exceeds 80). Continuation
-   lines are indented to the marker's content column
-   (`depth * INDENT + 2`). The algorithm is fully determined by
-   (text, start column, width 80) ⇒ `parse ∘ serialize` is byte-stable.
+   `U+0020`, never split a token. Continuation lines indented to the
+   marker's content column (`(d − 1) × 2 + d + 1`). Fully determined ⇒
+   `parse ∘ serialize` is byte-stable.
 9. Exactly one blank line between top-level operative clauses; exactly one
    trailing `LF`; no trailing whitespace.
 
@@ -278,12 +251,11 @@ basis of the idempotence test (7.3).
 
 The parser additionally accepts and normalizes to schema:
 
-- **List markers:** `- ` `* ` `• ` are all accepted; serialized as `- `.
-  Any leftover ordinal an author types (`1.`, `a)`, `(i)`) at the start of
-  the content is **stripped** and ignored — order comes from position, the
-  display label from depth.
-- **Indentation:** any consistent positive step; depth inferred relatively
-  (2.2); tabs allowed.
+- **All leading indentation is ignored** — structure comes solely from
+  hyphen/tilde counts. Tabs and any space amount are harmless.
+- **Stray ordinals** an author leaves at the start of content (`1.`,
+  `a)`, `(i)`, `2026.`) are stripped — order is positional, the display
+  label is derived from depth.
 - **Blank lines:** optional / repeated between clauses.
 - **Front-matter:** any whitespace around `:`; keys matched
   case-insensitively, re-serialized in canonical casing.
@@ -291,12 +263,11 @@ The parser additionally accepts and normalizes to schema:
   `== Operative ==` matched case-insensitively. No localized aliases in v1
   (international format, English keywords only).
 - **Trailing punctuation** (`,` `;` `.`) is **preserved** — it is
-  resolution content (unlike the legacy `resolutionParser.ts`, which
-  stripped it).
+  resolution content (unlike the legacy `resolutionParser.ts`).
 
-The parser does **not** repair (→ errors, section 7): depth > 4, nested
-preamble items, ambiguous text after a sublist, missing `%RES`, missing
-`---`, non-monotone indentation.
+The parser does **not** repair (→ errors, section 7): hyphen run > 5,
+depth skip, nested preamble item, tilde with no matching open clause,
+missing `%RES`, a pre-section line that is neither `Key: Value` nor blank.
 
 ---
 
@@ -310,9 +281,9 @@ Tokenizer/parser complete without a `ResError` (see catalog).
 ### 7.2 Structural stage
 - `ResolutionSchema.safeParse(result)` (Zod) succeeds.
 - Every `OperativeClause`/`SubClause`: `blocks[0].type === 'text'`.
-- Max nesting depth ≤ `MAX_SUBCLAUSE_DEPTH` (4).
-- **Warnings** (valid but reported): empty chapeau text block; empty
-  header; unknown front-matter key; empty section.
+- Max nesting depth ≤ `MAX_SUBCLAUSE_DEPTH` (4) ⇒ ≤ 5 hyphens.
+- **Warnings** (valid but reported): empty chapeau; empty header; unknown
+  front-matter key; empty section.
 
 ### 7.3 Idempotence stage
 With `S = serialize ∘ parse`: required `S(S(text)) === S(text)`
@@ -329,15 +300,13 @@ For any schema-valid `Resolution R` (IDs normalized):
 |---|---|
 | `ERR_MISSING_HEADER` | line 1 ≠ `%RES <ver>` |
 | `ERR_UNSUPPORTED_VERSION` | major version newer than supported |
-| `ERR_MISSING_FRONTMATTER_END` | no `---` before first section |
 | `ERR_UNKNOWN_SECTION` | `== … ==` not Header/Preamble/Operative |
-| `ERR_DEPTH_EXCEEDED` | nesting depth > 4 |
-| `ERR_BAD_INDENT` | indentation not resolvable to a monotone stack |
-| `ERR_PREAMBLE_NESTING` | indented sub-item under `== Preamble ==` |
-| `ERR_AMBIGUOUS_TEXT` | unmarked dedented line after a sublist (use `~ `) |
-| `ERR_ORPHAN_TAIL` | `~ ` with no matching open clause at its column |
+| `ERR_DEPTH_EXCEEDED` | hyphen run > 5 (sub-clause depth > 4) |
+| `ERR_DEPTH_SKIP` | child hyphen count > parent + 1 |
+| `ERR_PREAMBLE_NESTING` | preamble item with more than one hyphen |
+| `ERR_ORPHAN_TAIL` | `~`×d with no open clause at depth `d` |
 | `ERR_EMPTY_DOCUMENT` | neither preamble nor operative clauses |
-| `ERR_BAD_FRONTMATTER` | pre-`---` line is neither `Key: Value` nor blank |
+| `ERR_BAD_FRONTMATTER` | pre-section line neither `Key: Value` nor blank |
 
 | Code | (Warning) condition |
 |---|---|
@@ -355,8 +324,6 @@ For any schema-valid `Resolution R` (IDs normalized):
 ```
 %RES 1.0
 
----
-
 == Header ==
 
 THE GENERAL ASSEMBLY
@@ -371,20 +338,23 @@ THE GENERAL ASSEMBLY
 ```
 
 → `Resolution { committeeName: "THE GENERAL ASSEMBLY", preamble: [1],
-operative: [1] }`. All three sections present, `blocks[0]` text.
+operative: [1] }`. All sections present, `blocks[0]` text.
 
 ### 8.2 The hard case: text → sublist → closing text (recursive)
+
+Canonical form (cosmetic indentation shown; parser ignores it — the
+hyphen/tilde counts alone define the structure):
 
 ```
 == Operative ==
 
 - decides to
-  - establish an independent commission that
-    - reports annually to the General Assembly;
-    - issues concrete recommendations;
-    ~ while preserving the confidentiality of sources;
-  - secures the necessary funding from the regular budget;
-  ~ and to remain actively seized of the matter;
+  -- establish an independent commission that
+    --- reports annually to the General Assembly;
+    --- issues concrete recommendations;
+  ~~ while preserving the confidentiality of sources;
+  -- secures the necessary funding from the regular budget;
+~ and to remain actively seized of the matter;
 
 - requests the Secretary-General to report within 90 days.
 ```
@@ -392,45 +362,43 @@ operative: [1] }`. All three sections present, `blocks[0]` text.
 Resulting block structure:
 
 ```
-OperativeClause #1
+OperativeClause #1                       (- , depth 1)
 └─ blocks:
    ├─ TextBlock        "decides to"
    ├─ SubclausesBlock
-   │  ├─ SubClause                      (col 2, depth 1)
+   │  ├─ SubClause                        (-- , depth 2)
    │  │  └─ blocks:
    │  │     ├─ TextBlock      "establish an independent commission that"
    │  │     ├─ SubclausesBlock
    │  │     │  ├─ SubClause → TextBlock "reports annually to the General Assembly;"
    │  │     │  └─ SubClause → TextBlock "issues concrete recommendations;"
    │  │     └─ TextBlock      "while preserving the confidentiality of sources;"
-   │  │                                  ← ~ @ col 4 closes the depth-1 clause
+   │  │                                   ← ~~ closes the depth-2 clause
    │  └─ SubClause → TextBlock "secures the necessary funding from the regular budget;"
    └─ TextBlock        "and to remain actively seized of the matter;"
-                                         ← ~ @ col 2 closes operative clause #1
+                                          ← ~ closes operative clause #1
 OperativeClause #2 → TextBlock "requests the Secretary-General to report within 90 days."
 ```
 
-Column logic: `- decides` @0 → children @2 → their children @4. The inner
-`~` @4 (= child column of the depth-1 clause) closes that clause. The outer
-`~` @2 (= child column of clause #1) closes clause #1. Fully
-marker+column-determined; no ordinals anywhere.
+`~~` (depth 2) closes the `--` clause; `~` (depth 1) closes the `-`
+clause. Fully marker-determined; indentation is decorative only.
 
 ### 8.3 Lenient input → canonical output
 
-Input (mixed markers, 4-space step, stray ordinals, lowercase sections):
+Input (no indentation, mixed/stray ordinals, lowercase sections):
 
 ```
 %res 1.0
----
+Committee: SC
 == header ==
 The Security Council
 == preamble ==
-* Recalling its resolution 2025 (2026),
+- Recalling its resolution 2025 (2026),
 == operative ==
-* 1. Demands an immediate ceasefire;
-* 2. Decides to
-        a) deploy observers;
-        b) review the situation;
+- 1. Demands an immediate ceasefire;
+- 2. Decides to
+-- a) deploy observers;
+-- b) review the situation;
 ```
 
 Canonical output (after `serialize ∘ parse`):
@@ -438,7 +406,7 @@ Canonical output (after `serialize ∘ parse`):
 ```
 %RES 1.0
 
----
+Committee: SC
 
 == Header ==
 
@@ -453,30 +421,28 @@ The Security Council
 - Demands an immediate ceasefire;
 
 - Decides to
-  - deploy observers;
-  - review the situation;
+  -- deploy observers;
+  -- review the situation;
 ```
 
-The stray `1.` / `2.` / `a)` / `b)` are stripped (order is positional,
-labels are derived on render). Idempotent: re-`parse`/`serialize` yields
-identical bytes.
+Stray `1.` / `2.` / `a)` / `b)` stripped; zero indentation in the input is
+fine because depth comes from hyphen counts. Idempotent.
 
 ---
 
 ## 9. Deliberately out of scope (rationale)
 
 - **`AmendmentOverlay`** is review/collaboration state, not document
-  content. Belongs in the lossless JSON channel, not a human-edited
-  interchange format.
+  content. Belongs in the lossless JSON channel.
 - **Internal IDs** serve cursor/CRDT preservation; in the format they would
   only add noise and degrade LLM output. Re-import mints new IDs;
   `replaceResolution` performs the structural diff.
 - **Comment syntax** omitted in v1 to avoid parsing ambiguity and
-  idempotence breakage; can be added additively in v1.x (the `%RES`
-  version field covers this).
+  idempotence breakage; addable additively in v1.x (the `%RES` version
+  field covers this).
 - **`conferenceEmblem`** (SVG data URL): potentially very long, not
-  human-editable content. Stays in the JSON channel; can later be added as
-  an optional `Emblem:` key.
+  human-editable; stays in the JSON channel; can later be an optional
+  `Emblem:` key.
 
 ---
 
