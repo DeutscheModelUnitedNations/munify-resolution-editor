@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2]
+
+### Fixed
+
+- **Y.js store — reordering a clause no longer makes its text vanish.** Moving a preamble clause, operative clause, or subclause up/down went through `swap()`, which deleted the clause `Y.Map`s and re-inserted the _same_ instances. A Yjs shared type that has been removed from the document is tombstoned and cannot be re-integrated, so the clause came back empty. `swap()` now inserts fresh deep clones (`cloneClauseMap`) instead of the original instances.
+- **Y.js store — textareas rebind after a reorder.** `bindYTextToTextarea` captures a single `Y.Text` instance at attach time, but any reorder necessarily destroys that instance (Yjs has no in-place array move) while the `{#each}` keyed by clause id preserves the DOM node, so `@attach` never re-runs. The deleted `Y.Text` fired an observe event that blanked the still-bound textarea. `TextHandle.bindTextarea` now observes structural document changes and rebinds to the freshly-resolved `Y.Text` whenever the instance changes; plain text edits keep the same instance and are skipped.
+
 ## [0.2.0-rc1]
 
 ### Headline

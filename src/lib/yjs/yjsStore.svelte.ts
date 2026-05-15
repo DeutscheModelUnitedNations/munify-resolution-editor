@@ -785,9 +785,30 @@ export function createYjsStore(yDoc: Y.Doc, opts: YjsStoreOptions = {}): Resolut
 				}, 'local');
 			},
 			bindTextarea(el) {
-				const yText = findYText(loc);
-				if (!yText) return () => {};
-				return bindYTextToTextarea(yText, el);
+				// Reordering a clause can't move its Y.Text in place — Yjs has
+				// no move op, so the clause map (and its Y.Text) is deleted and
+				// re-created under the same id. The deleted Y.Text fires an
+				// observe event that blanks the still-bound textarea, and the
+				// `@attach` never re-runs because the {#each} is keyed by clause
+				// id (the DOM node is preserved). So we must detect the swap and
+				// rebind to the freshly-resolved Y.Text ourselves.
+				let bound = findYText(loc);
+				let teardown = bound ? bindYTextToTextarea(bound, el) : () => {};
+				const rootMap = yDoc.getMap<unknown>(ROOT_KEY);
+				const onStructure = (events: Y.YEvent<Y.AbstractType<unknown>>[]) => {
+					// Text-only edits keep the same Y.Text instance; skip them.
+					if (events.every((e) => e.target instanceof Y.Text)) return;
+					const current = findYText(loc);
+					if (current === bound) return;
+					teardown();
+					bound = current;
+					teardown = current ? bindYTextToTextarea(current, el) : () => {};
+				};
+				rootMap.observeDeep(onStructure);
+				return () => {
+					rootMap.unobserveDeep(onStructure);
+					teardown();
+				};
 			}
 		};
 		handleCache.set(key, handle);
@@ -833,16 +854,42 @@ export function createYjsStore(yDoc: Y.Doc, opts: YjsStoreOptions = {}): Resolut
 // Helpers
 // ---------------------------------------------------------------------------
 
+// A Yjs shared type can only be integrated into a document once. Once it is
+// removed from its parent it is tombstoned, and re-inserting the same instance
+// yields an empty/detached node (the clause's text disappears). Reordering must
+// therefore insert fresh deep clones rather than the original instances.
+function cloneClauseMap(src: Y.Map<unknown>): Y.Map<unknown> {
+	const map = new Y.Map<unknown>();
+	map.set('id', String(src.get('id')));
+
+	const content = src.get('content');
+	if (content !== undefined) {
+		// Preamble clause: { id, content: Y.Text }
+		const text = content instanceof Y.Text ? content.toString() : String(content ?? '');
+		map.set('content', new Y.Text(text));
+		return map;
+	}
+
+	// Operative clause or subclause: { id, blocks: Y.Array<Y.Map> }
+	const blocks = src.get('blocks');
+	const blocksArr = blocks instanceof Y.Array ? (blocks as Y.Array<Y.Map<unknown>>) : null;
+	const json = blocksArr ? blocksArr.toArray().map((m) => readBlockJson(m as Y.Map<unknown>)) : [];
+	const newBlocks = new Y.Array<Y.Map<unknown>>();
+	newBlocks.insert(0, json.map(buildBlockMapFromJson));
+	map.set('blocks', newBlocks);
+	return map;
+}
+
 function swap(arr: Y.Array<Y.Map<unknown>>, i: number, j: number) {
 	if (i === j) return;
 	const lo = Math.min(i, j);
 	const hi = Math.max(i, j);
-	const itemHi = arr.get(hi);
-	const itemLo = arr.get(lo);
+	const cloneHi = cloneClauseMap(arr.get(hi));
+	const cloneLo = cloneClauseMap(arr.get(lo));
 	arr.delete(hi, 1);
 	arr.delete(lo, 1);
-	arr.insert(lo, [itemHi as Y.Map<unknown>]);
-	arr.insert(hi, [itemLo as Y.Map<unknown>]);
+	arr.insert(lo, [cloneHi]);
+	arr.insert(hi, [cloneLo]);
 }
 
 function readBlocksAsJson(

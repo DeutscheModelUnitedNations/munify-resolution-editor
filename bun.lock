@@ -38,7 +38,13 @@
       },
       "peerDependencies": {
         "svelte": "^5.0.0",
+        "y-protocols": "^1.0.0",
+        "yjs": "^13.6.0",
       },
+      "optionalPeers": [
+        "y-protocols",
+        "yjs",
+      ],
     },
   },
   "packages": {
