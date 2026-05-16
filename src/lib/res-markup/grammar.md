@@ -50,7 +50,7 @@ Core principles:
   `targetClauseId` in the JSON channel — `[CLAUSE]` stays argument-free.
 
 Deliberately **out of v1**: amendments (`AmendmentOverlay`), internal IDs,
-comment syntax, embedded conference emblem. Rationale in §9.
+embedded conference emblem, and comment *round-tripping*. Rationale in §9.
 
 ### 1.1 Why these markers
 
@@ -97,6 +97,7 @@ comment syntax, embedded conference emblem. Rationale in §9.
 | `[CLAUSE]` | Operative clause start (**solo line**) | `^\[CLAUSE\]$` |
 | `-` … `----` + space | Sub-clause item; **depth = hyphen run length (1–4)** | `^-{1,4} \S` |
 | `>` , `->` … `--->` + space | Closing text; **hyphen prefix = the closed clause's own marker** | `^-{0,3}> \S` |
+| `# …` | Full-line comment (removed before parsing; §2.2) | `^\s*#` |
 
 - A marker run is consecutive hyphens with **no internal spaces**.
 - Sub-clause item = hyphens **then a space**; closing text = hyphens
@@ -107,8 +108,26 @@ comment syntax, embedded conference emblem. Rationale in §9.
   terminator.
 - Escaping: if a content line must literally begin with a marker form,
   prefix one backslash `\`; the parser strips exactly one leading `\`.
-  (Resolution prose effectively never starts a line with `[`, `-` + space
-  or `>`.)
+  (Resolution prose effectively never starts a line with `[`, `#`,
+  `-` + space or `>`.)
+
+### 2.2 Comments
+
+- A line whose first non-whitespace character is `#` is a **full-line
+  comment**. There are no trailing/inline comments — resolution text may
+  legitimately contain `#` (e.g. "document #5").
+- Comments are removed in a **pre-pass before tokenization** and are
+  fully transparent: a comment line acts neither as a blank line nor as a
+  continuation, so inserting one never changes the parse result. Original
+  source line numbers are preserved for diagnostics.
+- A comment block is therefore permitted **before** `%RES` (e.g. a
+  licence/header banner); `%RES` must be the first *remaining* line after
+  the pre-pass.
+- Comments have **no schema representation**: they are an authoring aid,
+  not data. The canonical serializer never emits comments, so a
+  round-trip does not preserve them (the same lossy contract as JSON/YAML
+  loaders). This does not affect idempotence (§7.3): the canonical form
+  contains no comments to begin with.
 
 ---
 
@@ -273,6 +292,7 @@ basis of the idempotence test (7.3).
    line's content column. Fully determined ⇒ `parse ∘ serialize` is
    byte-stable.
 9. Exactly one trailing `LF`; no trailing whitespace.
+10. **Comments are never emitted** (no schema representation, §2.2).
 
 ---
 
@@ -294,6 +314,9 @@ The parser additionally accepts and normalizes to schema:
   (international format, English keywords only).
 - **`[CLAUSE]`** matched case-insensitively, surrounding spaces tolerated
   (`[clause]`, `[ CLAUSE ]`).
+- **Comments** (`#` full lines, §2.2) may appear anywhere, including
+  before `%RES`; they are stripped transparently and never affect the
+  parse.
 - **Trailing punctuation** (`,` `;` `.`) is **preserved** — it is
   resolution content (unlike the legacy `resolutionParser.ts`).
 
@@ -424,9 +447,12 @@ prefix as the clause it closes.
 
 ### 8.3 Lenient input → canonical output
 
-Input (no indentation, mixed/stray ordinals, lowercase keywords):
+Input (leading comment banner, no indentation, mixed/stray ordinals,
+lowercase keywords, an interspersed comment):
 
 ```
+# Draft for SC review — do not circulate
+# author: DEU delegation
 %res 1.0
 Committee: SC
 == header ==
@@ -436,6 +462,7 @@ The Security Council
 == operative ==
 [clause]
 1. Demands an immediate ceasefire;
+# TODO: confirm the deployment timeline with legal
 [clause]
 2. Decides to
 - a) deploy observers;
@@ -468,7 +495,8 @@ Decides to
   - review the situation;
 ```
 
-Stray `1.` / `2.` / `a)` / `b)` stripped; zero indentation in the input is
+All `#` comment lines (banner and interspersed) are dropped; stray
+`1.` / `2.` / `a)` / `b)` stripped; zero indentation in the input is
 fine because structure comes from markers. Idempotent.
 
 ### 8.4 Clause fragment (amendment use-case)
@@ -498,9 +526,10 @@ Decides to
 - **Internal IDs** serve cursor/CRDT preservation; in the format they would
   only add noise and degrade LLM output. Re-import mints new IDs;
   `replaceResolution` performs the structural diff.
-- **Comment syntax** omitted in v1 to avoid parsing ambiguity and
-  idempotence breakage; addable additively in v1.x (the `%RES` version
-  field covers this).
+- **Comment round-tripping**: `#` comments are supported (§2.2) but, by
+  design, not preserved through a round-trip — they have no schema
+  representation. Preserving them would require carrying source-only
+  annotations through the data model, which is out of scope.
 - **`conferenceEmblem`** (SVG data URL): potentially very long, not
   human-editable; stays in the JSON channel; can later be an optional
   `Emblem:` key.
