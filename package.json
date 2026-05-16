@@ -20,6 +20,10 @@
 			"types": "./dist/schema/resolution.d.ts",
 			"default": "./dist/schema/resolution.js"
 		},
+		"./res-markup": {
+			"types": "./dist/res-markup/index.d.ts",
+			"default": "./dist/res-markup/index.js"
+		},
 		"./phrases": {
 			"types": "./dist/phrases/index.d.ts",
 			"default": "./dist/phrases/index.js"

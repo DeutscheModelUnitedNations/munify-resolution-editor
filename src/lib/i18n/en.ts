@@ -106,6 +106,17 @@ Example format:
 
 Text to format:`,
 
+	// RES-Markup document import / export
+	resolutionExport: 'Export',
+	resolutionImportResolution: 'Import resolution',
+	resolutionImportResolutionHint:
+		'Paste or upload a complete resolution in RES-Markup (.res.txt). It replaces the current document.',
+	resolutionImportResolutionFile: 'Choose file',
+	resolutionImportResolutionButton: 'Replace document',
+	resolutionImportResolutionInvalid: 'Not valid RES-Markup',
+	resolutionImportResolutionWarnings: 'Warnings',
+	resolutionImportResolutionEmpty: 'Paste RES-Markup or choose a .res.txt file to begin.',
+
 	// Amendments
 	amendmentProposed: 'Amendment proposed',
 	amendmentAdd: 'Add clause',

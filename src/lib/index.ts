@@ -31,8 +31,29 @@ export {
 	PhraseLookupModal,
 	PhraseSuggestions,
 	ImportModal,
+	ResolutionImportModal,
 	ResolutionPrintPreview
 } from './components';
+
+// RES-Markup interchange format (also available via the `/res-markup` subpath)
+export {
+	parse,
+	parseClauseFragment,
+	serialize,
+	serializeClause,
+	validate,
+	isIdempotent,
+	roundTrips,
+	suggestResolutionFilename,
+	RES_VERSION,
+	RES_FILE_EXTENSION,
+	type ParseResult,
+	type ValidateResult,
+	type ResError,
+	type ResWarning,
+	type ResErrorCode,
+	type ResWarningCode
+} from './res-markup';
 
 // Schema types and utilities
 export {
@@ -114,6 +135,8 @@ export {
 	parseOperativeText,
 	countOperativeClauses
 } from './services/resolutionParser';
+
+export { stripTerminalPunctuation, normalizeImportedResolution } from './services/importNormalize';
 
 // i18n
 export type { ResolutionEditorLabels, PartialLabels } from './i18n/types';

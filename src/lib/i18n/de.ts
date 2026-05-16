@@ -107,6 +107,18 @@ Beispielformat:
 
 Zu formatierender Text:`,
 
+	// RES-Markup document import / export
+	resolutionExport: 'Exportieren',
+	resolutionImportResolution: 'Resolution importieren',
+	resolutionImportResolutionHint:
+		'Fügen Sie eine vollständige Resolution im RES-Markup (.res.txt) ein oder laden Sie eine Datei hoch. Sie ersetzt das aktuelle Dokument.',
+	resolutionImportResolutionFile: 'Datei wählen',
+	resolutionImportResolutionButton: 'Dokument ersetzen',
+	resolutionImportResolutionInvalid: 'Kein gültiges RES-Markup',
+	resolutionImportResolutionWarnings: 'Hinweise',
+	resolutionImportResolutionEmpty:
+		'RES-Markup einfügen oder eine .res.txt-Datei wählen, um zu beginnen.',
+
 	// Amendments
 	amendmentProposed: 'Änderungsantrag vorgeschlagen',
 	amendmentAdd: 'Klausel hinzufügen',
