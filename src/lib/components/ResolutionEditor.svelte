@@ -230,25 +230,24 @@
 
 	{#if editable}
 		<div class="space-y-6">
-			<div class="flex items-center justify-between gap-2">
-				<div class="bg-base-100 rounded-lg p-3 border border-base-300 grow">
-					<div class="text-xs text-base-content/50 mb-1">{t.resolutionCommittee}</div>
-					<div class="font-bold uppercase tracking-wide">{resolution.committeeName},</div>
-				</div>
-				<div class="flex gap-2 shrink-0">
-					<button
-						type="button"
-						class="btn btn-sm btn-ghost"
-						onclick={() => (showResolutionImport = true)}
-					>
-						<i class="fa-solid fa-file-import"></i>
-						{t.resolutionImportResolution}
-					</button>
-					<button type="button" class="btn btn-sm btn-ghost" onclick={handleResolutionExport}>
-						<i class="fa-solid fa-file-export"></i>
-						{t.resolutionExport}
-					</button>
-				</div>
+			<div class="flex flex-wrap justify-end gap-2">
+				<button
+					type="button"
+					class="btn btn-sm btn-ghost"
+					onclick={() => (showResolutionImport = true)}
+				>
+					<i class="fa-solid fa-file-import"></i>
+					{t.resolutionImportResolution}
+				</button>
+				<button type="button" class="btn btn-sm btn-ghost" onclick={handleResolutionExport}>
+					<i class="fa-solid fa-file-export"></i>
+					{t.resolutionExport}
+				</button>
+			</div>
+
+			<div class="bg-base-100 rounded-lg p-3 border border-base-300">
+				<div class="text-xs text-base-content/50 mb-1">{t.resolutionCommittee}</div>
+				<div class="font-bold uppercase tracking-wide">{resolution.committeeName},</div>
 			</div>
 
 			<!-- Preamble Section -->
