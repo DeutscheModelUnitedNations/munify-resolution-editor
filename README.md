@@ -9,6 +9,7 @@ A Svelte 5 component library for creating and editing UN-style resolutions. Buil
 - **Real-time co-editing** (optional) — character-level collaborative typing via the `/yjs` subpath, including cursor-preserving CRDT bindings and remote-user awareness
 - **Phrase Validation & Suggestions** — validate clause openings against UN vocabulary, inline autocomplete
 - **Import from Text** — parse plain text or LLM-formatted resolutions
+- **RES-Markup import/export** — round-trip a whole resolution (metadata, header, preamble, operative) as a human- and LLM-friendly plain-text `.res.txt` file; spec in [`grammar.md`](src/lib/res-markup/grammar.md), tutorial in [`USER_GUIDE.md`](src/lib/res-markup/USER_GUIDE.md)
 - **Preview & Print** — official UN document format, page-broken via `pagedjs`
 - **Customizable** — i18n, custom phrases, snippet extension points
 - **Type-safe** — full TypeScript + Zod schema validation
@@ -324,6 +325,36 @@ import {
 	validateResolution
 } from '@deutschemodelunitednations/munify-resolution-editor/schema';
 ```
+
+### RES-Markup (import / export)
+
+A self-contained, plain-text interchange format for a whole resolution.
+Designed to be readable/editable by humans, robustly writable by LLMs, and
+losslessly parseable back into the `Resolution` schema. The editor exposes
+it through Import/Export buttons (`.res.txt` files); programmatic access:
+
+```ts
+import {
+	parse,
+	serialize,
+	validate,
+	parseClauseFragment,
+	serializeClause,
+	RES_VERSION,
+	RES_FILE_EXTENSION,
+	type ResError,
+	type ResWarning
+} from '@deutschemodelunitednations/munify-resolution-editor/res-markup';
+
+const { resolution, header, warnings } = parse(text);
+const text2 = serialize(resolution, header); // canonical, idempotent
+```
+
+- Full grammar, error catalog and round-trip contract:
+  [`src/lib/res-markup/grammar.md`](src/lib/res-markup/grammar.md)
+- Friendly tutorial with a worked example:
+  [`src/lib/res-markup/USER_GUIDE.md`](src/lib/res-markup/USER_GUIDE.md)
+- Depends only on `…/schema`; no Svelte/store/Y.js imports.
 
 ### Phrases
 

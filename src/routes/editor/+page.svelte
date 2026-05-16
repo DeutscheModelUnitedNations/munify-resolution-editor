@@ -94,7 +94,7 @@
 	});
 
 	// Sample header metadata for preview
-	const headerData: ResolutionHeaderData = {
+	let headerData = $state<ResolutionHeaderData>({
 		conferenceName: 'Model United Nations',
 		conferenceTitle: 'MUN Conference 2026',
 		committeeAbbreviation: 'GA',
@@ -103,7 +103,7 @@
 		documentNumber: 'A/RES/2026/001',
 		topic: 'Climate Action and Sustainable Development',
 		authoringDelegation: 'United States of America'
-	};
+	});
 
 	function handleCopySuccess(phrase: string) {
 		console.log('Copied phrase:', phrase);
@@ -135,6 +135,7 @@
 				operativePhrases={englishOperativePhrases}
 				onCopySuccess={handleCopySuccess}
 				onCopyError={handleCopyError}
+				onImportHeader={(h) => (headerData = { ...headerData, ...h })}
 			/>
 		</div>
 

@@ -28,6 +28,8 @@
 	import ResolutionPreview from './ResolutionPreview.svelte';
 	import PhraseLookupModal from './PhraseLookupModal.svelte';
 	import ImportModal from './ImportModal.svelte';
+	import ResolutionImportModal from './ResolutionImportModal.svelte';
+	import { serialize, suggestResolutionFilename } from '../res-markup';
 
 	interface Props {
 		store: ResolutionStore;
@@ -43,6 +45,12 @@
 		amendments?: AmendmentOverlay[];
 		rejectedClauseIds?: string[];
 		onAmendmentClick?: (amendmentId: string) => void;
+		/**
+		 * Called after a full RES-Markup document import with the parsed
+		 * header metadata, so the host can update its own `headerData`
+		 * (the store only owns the `Resolution` body).
+		 */
+		onImportHeader?: (header: ResolutionHeaderData) => void;
 		/** Optional remote-user awareness adapter. Native consumers pass undefined. */
 		presence?: PresenceAdapter;
 		// Snippet extension points
@@ -71,6 +79,7 @@
 		amendments = [],
 		rejectedClauseIds = [],
 		onAmendmentClick,
+		onImportHeader,
 		presence,
 		clauseToolbar,
 		preambleClauseToolbar,
@@ -97,6 +106,7 @@
 	let showOperativeLookup = $state(false);
 	let showPreambleImport = $state(false);
 	let showOperativeImport = $state(false);
+	let showResolutionImport = $state(false);
 
 	let lastFocusedPreambleId = $state<string | null>(null);
 	let lastFocusedOperativeId = $state<string | null>(null);
@@ -188,6 +198,29 @@
 		});
 		store.insertOperativeClauses(resolution.operative.length, newClauses);
 	}
+
+	// Full RES-Markup document import / export
+	function handleResolutionImport(next: Resolution, header: ResolutionHeaderData) {
+		store.replaceResolution(next);
+		onImportHeader?.(header);
+	}
+
+	function handleResolutionExport() {
+		const text = serialize(resolution, headerData ?? {});
+		const filename = suggestResolutionFilename(
+			headerData?.documentNumber,
+			resolution.committeeName
+		);
+		const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <fieldset class="fieldset bg-base-200 border-base-300 rounded-box w-full border p-4">
@@ -197,9 +230,25 @@
 
 	{#if editable}
 		<div class="space-y-6">
-			<div class="bg-base-100 rounded-lg p-3 border border-base-300">
-				<div class="text-xs text-base-content/50 mb-1">{t.resolutionCommittee}</div>
-				<div class="font-bold uppercase tracking-wide">{resolution.committeeName},</div>
+			<div class="flex items-center justify-between gap-2">
+				<div class="bg-base-100 rounded-lg p-3 border border-base-300 grow">
+					<div class="text-xs text-base-content/50 mb-1">{t.resolutionCommittee}</div>
+					<div class="font-bold uppercase tracking-wide">{resolution.committeeName},</div>
+				</div>
+				<div class="flex gap-2 shrink-0">
+					<button
+						type="button"
+						class="btn btn-sm btn-ghost"
+						onclick={() => (showResolutionImport = true)}
+					>
+						<i class="fa-solid fa-file-import"></i>
+						{t.resolutionImportResolution}
+					</button>
+					<button type="button" class="btn btn-sm btn-ghost" onclick={handleResolutionExport}>
+						<i class="fa-solid fa-file-export"></i>
+						{t.resolutionExport}
+					</button>
+				</div>
 			</div>
 
 			<!-- Preamble Section -->
@@ -484,5 +533,12 @@
 	type="operative"
 	onClose={() => (showOperativeImport = false)}
 	onImport={handleOperativeImport}
+	{labels}
+/>
+
+<ResolutionImportModal
+	bind:open={showResolutionImport}
+	onClose={() => (showResolutionImport = false)}
+	onImport={handleResolutionImport}
 	{labels}
 />

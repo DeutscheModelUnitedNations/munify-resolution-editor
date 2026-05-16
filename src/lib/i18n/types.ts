@@ -79,6 +79,16 @@ export interface ResolutionEditorLabels {
 	resolutionImportLLMPromptPreamble: string;
 	resolutionImportLLMPromptOperative: string;
 
+	// RES-Markup document import / export
+	resolutionExport: string;
+	resolutionImportResolution: string;
+	resolutionImportResolutionHint: string;
+	resolutionImportResolutionFile: string;
+	resolutionImportResolutionButton: string;
+	resolutionImportResolutionInvalid: string;
+	resolutionImportResolutionWarnings: string;
+	resolutionImportResolutionEmpty: string;
+
 	// Preview metadata
 	resolutionAuthoringDelegation: string;
 	resolutionSponsoringDelegations: string;
