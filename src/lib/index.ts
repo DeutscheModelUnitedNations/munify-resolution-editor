@@ -136,6 +136,8 @@ export {
 	countOperativeClauses
 } from './services/resolutionParser';
 
+export { stripTerminalPunctuation, normalizeImportedResolution } from './services/importNormalize';
+
 // i18n
 export type { ResolutionEditorLabels, PartialLabels } from './i18n/types';
 export {

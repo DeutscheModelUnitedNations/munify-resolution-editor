@@ -30,6 +30,10 @@
 	import ImportModal from './ImportModal.svelte';
 	import ResolutionImportModal from './ResolutionImportModal.svelte';
 	import { serialize, suggestResolutionFilename } from '../res-markup';
+	import {
+		normalizeImportedResolution,
+		stripTerminalPunctuation
+	} from '../services/importNormalize';
 
 	interface Props {
 		store: ResolutionStore;
@@ -201,8 +205,13 @@
 
 	// Full RES-Markup document import / export
 	function handleResolutionImport(next: Resolution, header: ResolutionHeaderData) {
-		store.replaceResolution(next);
-		onImportHeader?.(header);
+		store.replaceResolution(normalizeImportedResolution(next));
+		const headline = header.committeeResolutionHeadline;
+		onImportHeader?.(
+			headline !== undefined
+				? { ...header, committeeResolutionHeadline: stripTerminalPunctuation(headline) }
+				: header
+		);
 	}
 
 	function handleResolutionExport() {
