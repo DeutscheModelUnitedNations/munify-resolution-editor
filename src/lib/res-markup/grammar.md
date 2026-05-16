@@ -221,32 +221,49 @@ This disambiguates every case purely by marker:
 
 ## 4. Mapping onto the schema
 
-### 4.1 Front-matter → `ResolutionHeaderData`
+### 4.1 Front-matter → `Resolution` / `ResolutionHeaderData`
 
-| RES key | Target field | Transformation |
+The four committee-related fields have distinct roles and are kept
+**fully decoupled** (no shared field):
+
+| RES key | Target field | Example |
 |---|---|---|
-| `Conference` | `header.conferenceName` | string |
-| `ConferenceTitle` | `header.conferenceTitle` | string |
-| `Committee` | `header.committeeAbbreviation` | string |
-| `CommitteeFullName` | `header.committeeFullName` | string |
-| `DocumentNumber` | `header.documentNumber` | string |
-| `Topic` | `header.topic` | string |
-| `AuthoringDelegation` | `header.authoringDelegation` | string |
-| `SponsoringDelegations` | `header.sponsoringDelegations` | split on `,`, each trimmed, empties dropped → `string[]` |
+| `Conference` | `header.conferenceName` | `Model UN 2026` |
+| `ConferenceTitle` | `header.conferenceTitle` | `66th General Assembly` |
+| `Committee` | **`Resolution.committeeName`** (the organ; required) | `General Assembly` |
+| `CommitteeAbbreviation` | `header.committeeAbbreviation` | `GA` |
+| `CommitteeFullName` | `header.committeeFullName` | `General Assembly` |
+| `DocumentNumber` | `header.documentNumber` | `A/RES/66/1` |
+| `Topic` | `header.topic` | `The situation in …` |
+| `AuthoringDelegation` | `header.authoringDelegation` | `Germany` |
+| `SponsoringDelegations` | `header.sponsoringDelegations` | split on `,`, trimmed, empties dropped → `string[]` |
 | `LastEdited` | `header.lastEdited` | ISO-8601 string, passed through (schema allows `Date \| string`) |
 
 - Front-matter is every `Key: Value` line between `%RES …` and the first
   `== … ==` heading. Unknown keys: reported in `warnings`, otherwise
   ignored (forward-compatible, LLM-tolerant).
+- `Resolution.committeeName` is required by the schema. If `Committee:`
+  is absent, `committeeName = ""` plus `WARN_MISSING_COMMITTEE`.
 - `header.conferenceEmblem` is **not** a RES key in v1 (§9).
 
 ### 4.2 `== Header ==` → body headline
 
 The single logical line in `== Header ==` (e.g. `THE GENERAL ASSEMBLY`,
-`The Security Council`) maps to **both** `Resolution.committeeName`
-**and** `header.committeeResolutionHeadline`. On serialize the value is
-taken from `committeeResolutionHeadline ?? committeeName`. Empty →
-`WARN_EMPTY_HEADER`.
+`The Security Council`) maps **1:1 to `header.committeeResolutionHeadline`
+only** — fully decoupled from `Committee:` / `committeeName`. There is no
+fallback chain baked into the format (the app's display fallback to
+`committeeFullName` / `committeeName.toUpperCase()` is a *rendering*
+concern, not an interchange concern), so the round-trip stays lossless.
+
+- **Trailing comma:** the app renders `{committeeResolutionHeadline},` —
+  it appends the comma itself. On **parse**, exactly one trailing comma
+  is stripped before storing into `committeeResolutionHeadline`
+  (`THE GENERAL ASSEMBLY, ` → `THE GENERAL ASSEMBLY`). On **serialize**,
+  the canonical `== Header ==` line is emitted **with** a trailing comma,
+  so the file reads like the finished document while the schema value
+  stays clean and the round-trip is idempotent.
+- Empty section ⇒ `committeeResolutionHeadline` undefined +
+  `WARN_EMPTY_HEADER` (not synthesized from other fields).
 
 ### 4.3 Body → `Resolution`
 
@@ -370,6 +387,7 @@ holds per clause for `parseClauseFragment ∘ serializeClause`.
 |---|---|
 | `WARN_EMPTY_CHAPEAU` | (sub)clause without chapeau text |
 | `WARN_EMPTY_HEADER` | `== Header ==` empty |
+| `WARN_MISSING_COMMITTEE` | no `Committee:` key (`committeeName = ""`) |
 | `WARN_UNKNOWN_KEY` | unknown front-matter key |
 | `WARN_EMPTY_SECTION` | section without clauses |
 
@@ -382,9 +400,11 @@ holds per clause for `parseClauseFragment ∘ serializeClause`.
 ```
 %RES 1.0
 
+Committee: General Assembly
+
 == Header ==
 
-THE GENERAL ASSEMBLY
+THE GENERAL ASSEMBLY,
 
 == Preamble ==
 
@@ -396,8 +416,12 @@ THE GENERAL ASSEMBLY
 Calls upon all Member States to honour their obligations;
 ```
 
-→ `Resolution { committeeName: "THE GENERAL ASSEMBLY", preamble: [1],
-operative: [1] }`. All sections present, `blocks[0]` text.
+→ `Resolution.committeeName = "General Assembly"` (from `Committee:`);
+`header.committeeResolutionHeadline = "THE GENERAL ASSEMBLY"` (from
+`== Header ==`, trailing comma stripped — the canonical form re-emits it
+with the comma as shown). `preamble: [1]`, `operative: [1]`, all sections
+present, `blocks[0]` text. `Committee:` and `== Header ==` are fully
+decoupled.
 
 ### 8.2 The hard case: text → sublist → closing text (recursive)
 
@@ -454,7 +478,8 @@ lowercase keywords, an interspersed comment):
 # Draft for SC review — do not circulate
 # author: DEU delegation
 %res 1.0
-Committee: SC
+Committee: Security Council
+CommitteeAbbreviation: SC
 == header ==
 The Security Council
 == preamble ==
@@ -474,11 +499,12 @@ Canonical output (after `serialize ∘ parse`):
 ```
 %RES 1.0
 
-Committee: SC
+Committee:             Security Council
+CommitteeAbbreviation: SC
 
 == Header ==
 
-The Security Council
+The Security Council,
 
 == Preamble ==
 
@@ -497,7 +523,9 @@ Decides to
 
 All `#` comment lines (banner and interspersed) are dropped; stray
 `1.` / `2.` / `a)` / `b)` stripped; zero indentation in the input is
-fine because structure comes from markers. Idempotent.
+fine because structure comes from markers; the `== Header ==` line gains
+its canonical trailing comma; `Committee:` and the headline stay
+decoupled. Idempotent.
 
 ### 8.4 Clause fragment (amendment use-case)
 
