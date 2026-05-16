@@ -25,7 +25,7 @@ important audiences:
 
 Core principles:
 
-- **Markers determine both *kind* and *depth*; indentation is
+- **Markers determine both _kind_ and _depth_; indentation is
   non-significant.** Top-level operative clauses are delimited by a solo
   `[CLAUSE]` tag; sub-clause depth is the number of leading `-`; a closing
   text block carries its clause's own hyphen prefix plus `>`. Whitespace,
@@ -36,13 +36,13 @@ Core principles:
   removes the entire class of "how do I number the next level" mistakes.
 - **Operative clauses are self-delimiting.** Because each top-level clause
   starts with `[CLAUSE]`, a single clause can be excerpted by removing
-  that one line; the remainder is a valid *clause fragment*
+  that one line; the remainder is a valid _clause fragment_
   (`parseClauseFragment`, §10) yielding exactly one `OperativeClause` —
   the shape of `AmendmentOverlay.newContent`.
 - **Lenient on input, canonical on output.** The parser ignores all
   indentation and accepts loose section casing, alternate blank-line
   spacing and stray ordinals. The serializer emits exactly one canonical
-  form (which *does* indent, purely for human readability — §5).
+  form (which _does_ indent, purely for human readability — §5).
 - **Validity is programmatically decidable** (§7).
 - **IDs are not content.** `parse` mints fresh IDs; `serialize` never emits
   IDs. Cursor/collaboration preservation is the job of `replaceResolution`,
@@ -50,7 +50,7 @@ Core principles:
   `targetClauseId` in the JSON channel — `[CLAUSE]` stays argument-free.
 
 Deliberately **out of v1**: amendments (`AmendmentOverlay`), internal IDs,
-embedded conference emblem, and comment *round-tripping*. Rationale in §9.
+embedded conference emblem, and comment _round-tripping_. Rationale in §9.
 
 ### 1.1 Why these markers
 
@@ -61,8 +61,8 @@ embedded conference emblem, and comment *round-tripping*. Rationale in §9.
   format whitespace-insensitive; LLMs emit small repetitions reliably (like
   Markdown heading levels). Because `[CLAUSE]` absorbs the top level, the
   common single-sub-level case is just `-` and the maximum is `----`.
-- **`<prefix>>` for closing text:** the closing marker reuses the *opening
-  hyphen prefix of the clause it closes*, plus `>`. So a `-` clause's
+- **`<prefix>>` for closing text:** the closing marker reuses the _opening
+  hyphen prefix of the clause it closes_, plus `>`. So a `-` clause's
   trailing text is `->`, a `--` clause's is `-->`, and the `[CLAUSE]`'s own
   is `>`. No new counting rule to learn (prefix = the clause's own marker),
   and `>` reads naturally as "…then / back to" — exactly the meaning of a
@@ -79,9 +79,9 @@ embedded conference emblem, and comment *round-tripping*. Rationale in §9.
 - **Leading whitespace is non-significant** and discarded before marker
   detection. (The canonical serializer re-adds cosmetic indentation; §5.)
 - **Logical line:** a marker line plus any directly following
-  *continuation lines* (non-blank lines that do not start with a marker, no
+  _continuation lines_ (non-blank lines that do not start with a marker, no
   blank line in between). Contents are joined with exactly one space
-  (`U+0020`). Exception: the `[CLAUSE]` tag is *solo* — the chapeau is the
+  (`U+0020`). Exception: the `[CLAUSE]` tag is _solo_ — the chapeau is the
   logical line(s) that follow it.
 - **Blank line:** empty after trimming; terminates a logical line / block.
   Consecutive blank lines are equivalent to one. Blank lines never affect
@@ -89,15 +89,15 @@ embedded conference emblem, and comment *round-tripping*. Rationale in §9.
 
 ### 2.1 Markers (line-leading, after stripped indentation)
 
-| Marker | Meaning | Canonical regex |
-|---|---|---|
-| `%RES <ver>` | Format header, **required, line 1** | `^%RES \d+\.\d+$` |
-| `Key: Value` | Front-matter pair (only before the first section) | `^[A-Za-z][A-Za-z0-9]*: .*$` |
-| `== <Section> ==` | Section heading; also ends front-matter | `^== .+ ==$` |
-| `[CLAUSE]` | Operative clause start (**solo line**) | `^\[CLAUSE\]$` |
-| `-` … `----` + space | Sub-clause item; **depth = hyphen run length (1–4)** | `^-{1,4} \S` |
-| `>` , `->` … `--->` + space | Closing text; **hyphen prefix = the closed clause's own marker** | `^-{0,3}> \S` |
-| `# …` | Full-line comment (removed before parsing; §2.2) | `^\s*#` |
+| Marker                      | Meaning                                                          | Canonical regex              |
+| --------------------------- | ---------------------------------------------------------------- | ---------------------------- |
+| `%RES <ver>`                | Format header, **required, line 1**                              | `^%RES \d+\.\d+$`            |
+| `Key: Value`                | Front-matter pair (only before the first section)                | `^[A-Za-z][A-Za-z0-9]*: .*$` |
+| `== <Section> ==`           | Section heading; also ends front-matter                          | `^== .+ ==$`                 |
+| `[CLAUSE]`                  | Operative clause start (**solo line**)                           | `^\[CLAUSE\]$`               |
+| `-` … `----` + space        | Sub-clause item; **depth = hyphen run length (1–4)**             | `^-{1,4} \S`                 |
+| `>` , `->` … `--->` + space | Closing text; **hyphen prefix = the closed clause's own marker** | `^-{0,3}> \S`                |
+| `# …`                       | Full-line comment (removed before parsing; §2.2)                 | `^\s*#`                      |
 
 - A marker run is consecutive hyphens with **no internal spaces**.
 - Sub-clause item = hyphens **then a space**; closing text = hyphens
@@ -121,7 +121,7 @@ embedded conference emblem, and comment *round-tripping*. Rationale in §9.
   continuation, so inserting one never changes the parse result. Original
   source line numbers are preserved for diagnostics.
 - A comment block is therefore permitted **before** `%RES` (e.g. a
-  licence/header banner); `%RES` must be the first *remaining* line after
+  licence/header banner); `%RES` must be the first _remaining_ line after
   the pre-pass.
 - Comments have **no schema representation**: they are an authoring aid,
   not data. The canonical serializer never emits comments, so a
@@ -196,12 +196,12 @@ blankline         = NL ;
 `closing-text(d)` is written as `DASH(d) ">"` — i.e. the **same hyphen
 prefix as the clause it closes**, followed by `>`:
 
-| Marker | Closes clause at | Which clause |
-|---|---|---|
-| `>` | depth 0 | the `[CLAUSE]` itself |
-| `->` | depth 1 | the enclosing `-` sub-clause |
-| `-->` | depth 2 | the enclosing `--` sub-clause |
-| `--->` | depth 3 | the enclosing `---` sub-clause |
+| Marker | Closes clause at | Which clause                   |
+| ------ | ---------------- | ------------------------------ |
+| `>`    | depth 0          | the `[CLAUSE]` itself          |
+| `->`   | depth 1          | the enclosing `-` sub-clause   |
+| `-->`  | depth 2          | the enclosing `--` sub-clause  |
+| `--->` | depth 3          | the enclosing `---` sub-clause |
 
 A `DASH(d)>` line appends a trailing `TextBlock` to the nearest open
 clause at depth `d`. The hyphen count alone determines attachment; no
@@ -214,8 +214,8 @@ This disambiguates every case purely by marker:
 
 - chapeau continuation → no marker;
 - a deeper item → more hyphens **+ space**;
-- a closing sentence of *this* clause → its own prefix **+ `>`**;
-- a closing sentence of an *outer* clause → a shorter prefix **+ `>`**.
+- a closing sentence of _this_ clause → its own prefix **+ `>`**;
+- a closing sentence of an _outer_ clause → a shorter prefix **+ `>`**.
 
 ---
 
@@ -226,18 +226,18 @@ This disambiguates every case purely by marker:
 The four committee-related fields have distinct roles and are kept
 **fully decoupled** (no shared field):
 
-| RES key | Target field | Example |
-|---|---|---|
-| `Conference` | `header.conferenceName` | `Model UN 2026` |
-| `ConferenceTitle` | `header.conferenceTitle` | `66th General Assembly` |
-| `Committee` | **`Resolution.committeeName`** (the organ; required) | `General Assembly` |
-| `CommitteeAbbreviation` | `header.committeeAbbreviation` | `GA` |
-| `CommitteeFullName` | `header.committeeFullName` | `General Assembly` |
-| `DocumentNumber` | `header.documentNumber` | `A/RES/66/1` |
-| `Topic` | `header.topic` | `The situation in …` |
-| `AuthoringDelegation` | `header.authoringDelegation` | `Germany` |
-| `SponsoringDelegations` | `header.sponsoringDelegations` | split on `,`, trimmed, empties dropped → `string[]` |
-| `LastEdited` | `header.lastEdited` | ISO-8601 string, passed through (schema allows `Date \| string`) |
+| RES key                 | Target field                                         | Example                                                          |
+| ----------------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
+| `Conference`            | `header.conferenceName`                              | `Model UN 2026`                                                  |
+| `ConferenceTitle`       | `header.conferenceTitle`                             | `66th General Assembly`                                          |
+| `Committee`             | **`Resolution.committeeName`** (the organ; required) | `General Assembly`                                               |
+| `CommitteeAbbreviation` | `header.committeeAbbreviation`                       | `GA`                                                             |
+| `CommitteeFullName`     | `header.committeeFullName`                           | `General Assembly`                                               |
+| `DocumentNumber`        | `header.documentNumber`                              | `A/RES/66/1`                                                     |
+| `Topic`                 | `header.topic`                                       | `The situation in …`                                             |
+| `AuthoringDelegation`   | `header.authoringDelegation`                         | `Germany`                                                        |
+| `SponsoringDelegations` | `header.sponsoringDelegations`                       | split on `,`, trimmed, empties dropped → `string[]`              |
+| `LastEdited`            | `header.lastEdited`                                  | ISO-8601 string, passed through (schema allows `Date \| string`) |
 
 - Front-matter is every `Key: Value` line between `%RES …` and the first
   `== … ==` heading. Unknown keys: reported in `warnings`, otherwise
@@ -252,7 +252,7 @@ The single logical line in `== Header ==` (e.g. `THE GENERAL ASSEMBLY`,
 `The Security Council`) maps **1:1 to `header.committeeResolutionHeadline`
 only** — fully decoupled from `Committee:` / `committeeName`. There is no
 fallback chain baked into the format (the app's display fallback to
-`committeeFullName` / `committeeName.toUpperCase()` is a *rendering*
+`committeeFullName` / `committeeName.toUpperCase()` is a _rendering_
 concern, not an interchange concern), so the round-trip stays lossless.
 
 - **Trailing comma:** the app renders `{committeeResolutionHeadline},` —
@@ -349,9 +349,11 @@ outside the operative section.
 `validate(text)` is `valid` iff all four stages pass:
 
 ### 7.1 Syntax stage
+
 Tokenizer/parser complete without a `ResError` (see catalog).
 
 ### 7.2 Structural stage
+
 - `ResolutionSchema.safeParse(result)` (Zod) succeeds.
 - Every `OperativeClause`/`SubClause`: `blocks[0].type === 'text'`.
 - Max nesting depth ≤ `MAX_SUBCLAUSE_DEPTH` (4) ⇒ ≤ 4 hyphens.
@@ -359,10 +361,12 @@ Tokenizer/parser complete without a `ResError` (see catalog).
   front-matter key; empty section.
 
 ### 7.3 Idempotence stage
+
 With `S = serialize ∘ parse`: required `S(S(text)) === S(text)`
 (byte-identical).
 
 ### 7.4 Round-trip stage (model fidelity)
+
 For any schema-valid `Resolution R` (IDs normalized):
 `parse(serialize(R)).resolution` is **structurally equal** to `R`
 (IDs excluded; `cleanupBlocks` applied on both sides). The same property
@@ -370,26 +374,26 @@ holds per clause for `parseClauseFragment ∘ serializeClause`.
 
 ### Error catalog (`ResError`, each with line/column)
 
-| Code | Condition |
-|---|---|
-| `ERR_MISSING_HEADER` | line 1 ≠ `%RES <ver>` |
-| `ERR_UNSUPPORTED_VERSION` | major version newer than supported |
-| `ERR_UNKNOWN_SECTION` | `== … ==` not Header/Preamble/Operative |
-| `ERR_BAD_FRONTMATTER` | pre-section line neither `Key: Value` nor blank |
-| `ERR_DEPTH_EXCEEDED` | hyphen run > 4 (sub-clause depth > 4) |
-| `ERR_DEPTH_SKIP` | child hyphen count > parent + 1 |
-| `ERR_PREAMBLE_NESTING` | preamble item not exactly one `- ` |
-| `ERR_CLAUSE_OUTSIDE_OPERATIVE` | `[CLAUSE]` not in the operative section |
-| `ERR_ORPHAN_TAIL` | `DASH(d)>` with no open clause at depth `d` |
-| `ERR_EMPTY_DOCUMENT` | neither preamble nor operative clauses |
+| Code                           | Condition                                       |
+| ------------------------------ | ----------------------------------------------- |
+| `ERR_MISSING_HEADER`           | line 1 ≠ `%RES <ver>`                           |
+| `ERR_UNSUPPORTED_VERSION`      | major version newer than supported              |
+| `ERR_UNKNOWN_SECTION`          | `== … ==` not Header/Preamble/Operative         |
+| `ERR_BAD_FRONTMATTER`          | pre-section line neither `Key: Value` nor blank |
+| `ERR_DEPTH_EXCEEDED`           | hyphen run > 4 (sub-clause depth > 4)           |
+| `ERR_DEPTH_SKIP`               | child hyphen count > parent + 1                 |
+| `ERR_PREAMBLE_NESTING`         | preamble item not exactly one `- `              |
+| `ERR_CLAUSE_OUTSIDE_OPERATIVE` | `[CLAUSE]` not in the operative section         |
+| `ERR_ORPHAN_TAIL`              | `DASH(d)>` with no open clause at depth `d`     |
+| `ERR_EMPTY_DOCUMENT`           | neither preamble nor operative clauses          |
 
-| Code | (Warning) condition |
-|---|---|
-| `WARN_EMPTY_CHAPEAU` | (sub)clause without chapeau text |
-| `WARN_EMPTY_HEADER` | `== Header ==` empty |
+| Code                     | (Warning) condition                        |
+| ------------------------ | ------------------------------------------ |
+| `WARN_EMPTY_CHAPEAU`     | (sub)clause without chapeau text           |
+| `WARN_EMPTY_HEADER`      | `== Header ==` empty                       |
 | `WARN_MISSING_COMMITTEE` | no `Committee:` key (`committeeName = ""`) |
-| `WARN_UNKNOWN_KEY` | unknown front-matter key |
-| `WARN_EMPTY_SECTION` | section without clauses |
+| `WARN_UNKNOWN_KEY`       | unknown front-matter key                   |
+| `WARN_EMPTY_SECTION`     | section without clauses                    |
 
 ---
 
@@ -593,4 +597,7 @@ declare const RES_VERSION = '1.0';
 Dependency direction is strictly **`res-markup` → `schema/resolution.ts`**.
 No Svelte, store or Y.js imports, so the module remains losslessly
 extractable as a standalone package later.
+
+```
+
 ```

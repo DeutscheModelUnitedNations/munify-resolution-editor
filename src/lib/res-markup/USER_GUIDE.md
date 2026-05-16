@@ -1,8 +1,8 @@
 # RES-Markup — User Guide
 
 A friendly introduction to writing resolutions in **RES-Markup**.
-If you are *implementing* a parser, read the precise rules in
-[`grammar.md`](./grammar.md). If you are *writing* a resolution, this is
+If you are _implementing_ a parser, read the precise rules in
+[`grammar.md`](./grammar.md). If you are _writing_ a resolution, this is
 the page you want.
 
 ---
@@ -43,7 +43,7 @@ THE GENERAL ASSEMBLY,
 Calls upon everyone to read the rest of this guide;
 ```
 
-That is a complete, valid resolution. Everything else is just *more* of
+That is a complete, valid resolution. Everything else is just _more_ of
 the same four building blocks: front-matter, `== Header ==`,
 `== Preamble ==`, `== Operative ==`.
 
@@ -63,7 +63,7 @@ Every file starts with this exact line:
 %RES 1.0
 ```
 
-A `#` comment banner may sit *above* it (see §6) — handy for drafting
+A `#` comment banner may sit _above_ it (see §6) — handy for drafting
 notes or a licence.
 
 ### 2. Front-matter — the metadata
@@ -155,7 +155,7 @@ Decides that nesting shall be expressed by counting hyphens, namely
 
 ### 7. Closing sentences — the `>` arrow
 
-Sometimes a clause has a sub-list and *then* a closing line that still
+Sometimes a clause has a sub-list and _then_ a closing line that still
 belongs to the clause ("…; and decides to remain seized of the matter").
 That line uses an arrow: the **same hyphens as the clause it closes, plus
 `>`**.
@@ -193,7 +193,7 @@ Requests a legal review;
 
 ---
 
-## The things you *don't* have to do
+## The things you _don't_ have to do
 
 This is the best part:
 
@@ -202,7 +202,7 @@ This is the best part:
   stripped on import. Reordering clauses never means renumbering.
 - **Don't align the front-matter.** The exporter does it.
 - **Don't worry about the headline comma.** It's normalised.
-- **Don't escape normal prose.** Only a line that must *literally* start
+- **Don't escape normal prose.** Only a line that must _literally_ start
   with `[`, `#`, `-` + space, or `>` needs a leading `\`. Resolution
   sentences essentially never do.
 
@@ -278,21 +278,21 @@ still parses to exactly the same resolution.
 
 ## Cheat sheet
 
-| You write | It means |
-|---|---|
-| `%RES 1.0` | required first line |
-| `Key: Value` | a metadata field |
-| `== Header ==` | the italic headline line follows |
-| `== Preamble ==` | preamble clauses follow |
-| `== Operative ==` | operative clauses follow |
-| `- text` | one preamble clause |
-| `[CLAUSE]` (alone) | start of an operative clause |
-| `- text` | sub-clause, level 1 |
-| `-- text` | sub-clause, level 2 (max `----`) |
-| `> text` | closing line of the `[CLAUSE]` |
-| `-> text` | closing line of a `-` sub-clause |
-| `# text` | comment (ignored, not saved) |
-| `\- text` | a line that literally starts with `- ` |
+| You write          | It means                               |
+| ------------------ | -------------------------------------- |
+| `%RES 1.0`         | required first line                    |
+| `Key: Value`       | a metadata field                       |
+| `== Header ==`     | the italic headline line follows       |
+| `== Preamble ==`   | preamble clauses follow                |
+| `== Operative ==`  | operative clauses follow               |
+| `- text`           | one preamble clause                    |
+| `[CLAUSE]` (alone) | start of an operative clause           |
+| `- text`           | sub-clause, level 1                    |
+| `-- text`          | sub-clause, level 2 (max `----`)       |
+| `> text`           | closing line of the `[CLAUSE]`         |
+| `-> text`          | closing line of a `-` sub-clause       |
+| `# text`           | comment (ignored, not saved)           |
+| `\- text`          | a line that literally starts with `- ` |
 
 ---
 
@@ -307,7 +307,7 @@ still parses to exactly the same resolution.
 **Can the preamble have sub-points?** No, preamble clauses are flat.
 
 **Where do amendments fit?** A single clause minus its `[CLAUSE]` line is
-a *fragment* the tooling can parse on its own — that's exactly the unit
+a _fragment_ the tooling can parse on its own — that's exactly the unit
 an amendment replaces. Amendment status, sponsors etc. live in the app,
 not in this text format.
 
