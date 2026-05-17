@@ -22,6 +22,13 @@ import {
 	isClauseEmpty
 } from '../schema/resolution';
 import { unEmblemSvg } from '../assets/un-emblem';
+import {
+	FONT_SETUP,
+	MUN_DISCLAIMER,
+	PAGE_BASE_ARGS,
+	THICK_RULE,
+	THIN_RULE
+} from './typst-snippets';
 
 // ── Markup-context escaping ───────────────────────────────────────────────────
 
@@ -130,24 +137,14 @@ function emitDocumentSetup(header: ResolutionHeaderData): string {
 	const docNum = header.documentNumber ?? '';
 	const runningHeader = [abbrev, docNum].filter(Boolean).map(escapeTypst).join('/');
 
-	const pageArgs: string[] = [
-		'  paper: "a4"',
-		'  margin: (top: 20mm, bottom: 20mm, left: 25mm, right: 25mm)',
-		'  numbering: "1"',
-		'  number-align: center + bottom'
-	];
-
+	const pageArgs = [...PAGE_BASE_ARGS];
 	if (runningHeader) {
 		pageArgs.push(
 			`  header: context if counter(page).get().first() > 1 [\n    #align(right)[#text(size: 9pt)[${runningHeader}]]\n  ]`
 		);
 	}
 
-	return [
-		`#set page(\n${pageArgs.join(',\n')},\n)`,
-		`#set text(font: ("Times New Roman", "Linux Libertine", "serif"), size: 11pt, lang: "en")`,
-		`#set par(justify: true)`
-	].join('\n');
+	return [`#set page(\n${pageArgs.join(',\n')},\n)`, FONT_SETUP].join('\n');
 }
 
 // ── Visible document header ───────────────────────────────────────────────────
@@ -171,7 +168,7 @@ function emitHeaderSection(header: ResolutionHeaderData, resolution: Resolution)
 
 		lines.push(`#grid(\n  columns: (1fr, auto),\n  [${leftCell}],\n  [${rightCell}]\n)`);
 		lines.push('#v(4pt)');
-		lines.push('#line(length: 100%, stroke: 0.5pt)');
+		lines.push(THIN_RULE);
 		lines.push('#v(6pt)');
 	}
 
@@ -205,12 +202,9 @@ function emitHeaderSection(header: ResolutionHeaderData, resolution: Resolution)
 		lines.push('#v(4pt)');
 	}
 
-	// Disclaimer
-	lines.push(
-		`#text(size: 7pt, fill: luma(120))[This document was created as part of a Model United Nations simulation and has no legal validity.]`
-	);
+	lines.push(MUN_DISCLAIMER);
 	lines.push('#v(6pt)');
-	lines.push('#line(length: 100%, stroke: 2pt)');
+	lines.push(THICK_RULE);
 
 	return lines.join('\n');
 }
