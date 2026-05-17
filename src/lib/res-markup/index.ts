@@ -33,3 +33,5 @@ export function suggestResolutionFilename(
 		.replace(/^[_.]+|[_.]+$/g, '');
 	return (base || 'resolution') + RES_FILE_EXTENSION;
 }
+
+export { resolutionToTypst } from './serialize-typst';
