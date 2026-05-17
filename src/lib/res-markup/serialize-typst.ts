@@ -23,9 +23,11 @@ import {
 } from '../schema/resolution';
 import { unEmblemSvg } from '../assets/un-emblem';
 import {
+	BLOCK_RENDERERS,
 	FONT_SETUP,
 	MUN_DISCLAIMER,
 	PAGE_BASE_ARGS,
+	STYLE_CONFIG,
 	THICK_RULE,
 	THIN_RULE
 } from './typst-snippets';
@@ -140,11 +142,18 @@ function emitDocumentSetup(header: ResolutionHeaderData): string {
 	const pageArgs = [...PAGE_BASE_ARGS];
 	if (runningHeader) {
 		pageArgs.push(
-			`  header: context if counter(page).get().first() > 1 [\n    #align(right)[#text(size: 9pt)[${runningHeader}]]\n  ]`
+			`  header: context if counter(page).get().first() > 1 [\n    #align(right)[#text(size: s.header-meta-size)[${runningHeader}]]\n  ]`
 		);
 	}
 
-	return [`#set page(\n${pageArgs.join(',\n')},\n)`, FONT_SETUP].join('\n');
+	return [
+		STYLE_CONFIG,
+		'',
+		BLOCK_RENDERERS,
+		'',
+		`#set page(\n${pageArgs.join(',\n')},\n)`,
+		FONT_SETUP
+	].join('\n');
 }
 
 // ── Visible document header ───────────────────────────────────────────────────
@@ -187,18 +196,14 @@ function emitHeaderSection(header: ResolutionHeaderData, resolution: Resolution)
 
 	// Authoring delegation
 	if (header.authoringDelegation) {
-		lines.push(
-			`#grid(\n  columns: (auto, 1fr),\n  gutter: 6pt,\n  [#text(weight: "bold", size: 9pt)[AUTHORING DELEGATION]],\n  [#pad(left: 4pt)[${escapeTypst(header.authoringDelegation)}]]\n)`
-		);
+		lines.push(`#meta-row[AUTHORING DELEGATION][${escapeTypst(header.authoringDelegation)}]`);
 		lines.push('#v(4pt)');
 	}
 
 	// Sponsoring delegations
 	if (header.sponsoringDelegations && header.sponsoringDelegations.length > 0) {
 		const delegations = header.sponsoringDelegations.map(escapeTypst).join(', ');
-		lines.push(
-			`#grid(\n  columns: (auto, 1fr),\n  gutter: 6pt,\n  [#text(weight: "bold", size: 9pt)[SPONSORING DELEGATIONS]],\n  [#pad(left: 4pt)[${delegations}]]\n)`
-		);
+		lines.push(`#meta-row[SPONSORING DELEGATIONS][${delegations}]`);
 		lines.push('#v(4pt)');
 	}
 
@@ -212,7 +217,7 @@ function emitHeaderSection(header: ResolutionHeaderData, resolution: Resolution)
 // ── Body opening (topic + resolution headline) ────────────────────────────────
 
 function emitBodyOpening(header: ResolutionHeaderData, resolution: Resolution): string {
-	const lines: string[] = ['#v(12pt)'];
+	const lines: string[] = ['#v(s.section-gap)'];
 
 	if (header.topic) {
 		lines.push(`#text(weight: "bold")[${escapeTypst(header.topic)}]`);
@@ -239,7 +244,7 @@ function emitPreambleClauses(clauses: PreambleClause[]): string {
 	const lines: string[] = [];
 	for (const clause of nonEmpty) {
 		const content = escapeTypst(stripTrailingPunct(clause.content.trim()));
-		lines.push(`#par(first-line-indent: 1.5em)[#emph[${content},]]`);
+		lines.push(`#pre-clause[${content}]`);
 		lines.push('');
 	}
 
@@ -267,14 +272,13 @@ function emitSubClause(
 	depth: number,
 	isLastInParent: boolean
 ): string {
-	const indentEm = depth * 1.5;
 	const lines: string[] = [];
 	const blocks = sub.blocks;
 	const firstContent = escapeTypst(stripTrailingPunct(getFirstTextContent(sub).trim()));
 	const isOnlyBlock = blocks.length === 1;
 	const endPunct = isOnlyBlock && isLastInParent ? '.' : ';';
 
-	lines.push(`#pad(left: ${indentEm}em)[#par[${escapeTypst(label)} ${firstContent}${endPunct}]]`);
+	lines.push(`#sc-clause([${escapeTypst(label)}], [${firstContent}], ${depth}, [${endPunct}])`);
 
 	for (let i = 1; i < blocks.length; i++) {
 		const b = blocks[i];
@@ -285,7 +289,7 @@ function emitSubClause(
 		} else {
 			const content = escapeTypst(stripTrailingPunct(b.content.trim()));
 			const punct = isLastBlock && isLastInParent ? '.' : ';';
-			lines.push(`#pad(left: ${indentEm}em)[#par[${content}${punct}]]`);
+			lines.push(`#cont-clause([${content}], ${depth}, [${punct}])`);
 		}
 	}
 
@@ -300,9 +304,7 @@ function emitTopLevelClause(clause: OperativeClause, number: number, isLast: boo
 	const endPunct = isOnlyBlock && isLast ? '.' : ';';
 	const { first, rest } = splitFirstWord(firstContent);
 
-	lines.push(
-		`#par(first-line-indent: 1.5em)[*${number}.* #emph[${escapeTypst(first)}]${escapeTypst(rest)}${endPunct}]`
-	);
+	lines.push(`#op-clause[${number}][${escapeTypst(first)}][${escapeTypst(rest)}][${endPunct}]`);
 
 	for (let i = 1; i < blocks.length; i++) {
 		const b = blocks[i];
@@ -313,7 +315,7 @@ function emitTopLevelClause(clause: OperativeClause, number: number, isLast: boo
 		} else {
 			const content = escapeTypst(stripTrailingPunct(b.content.trim()));
 			const punct = isLastBlock && isLast ? '.' : ';';
-			lines.push(`#pad(left: 1.5em)[#par[${content}${punct}]]`);
+			lines.push(`#cont-clause([${content}], 1, [${punct}])`);
 		}
 	}
 
@@ -324,10 +326,10 @@ function emitOperativeClauses(clauses: OperativeClause[]): string {
 	const nonEmpty = clauses.filter((c) => !isClauseEmpty(c));
 	if (nonEmpty.length === 0) return '';
 
-	const lines: string[] = ['#v(12pt)', ''];
+	const lines: string[] = ['#v(s.section-gap)', ''];
 	for (let i = 0; i < nonEmpty.length; i++) {
 		lines.push(emitTopLevelClause(nonEmpty[i], i + 1, i === nonEmpty.length - 1));
-		if (i < nonEmpty.length - 1) lines.push('#v(4pt)');
+		if (i < nonEmpty.length - 1) lines.push('#v(s.clause-gap)');
 		lines.push('');
 	}
 
