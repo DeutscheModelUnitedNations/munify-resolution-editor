@@ -10,7 +10,9 @@ const config = {
 			assets: 'build',
 			fallback: undefined,
 			precompress: false,
-			strict: true
+			// /api/pdf is a server-side endpoint (Typst PDF compilation) that
+			// adapter-static can't prerender; skip it so the Pages demo builds.
+			strict: false
 		}),
 		paths: {
 			base: process.argv.includes('dev') ? '' : (process.env.BASE_PATH ?? '')
