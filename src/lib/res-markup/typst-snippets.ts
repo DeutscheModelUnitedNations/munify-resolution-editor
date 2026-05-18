@@ -56,12 +56,11 @@ export const BLOCK_RENDERERS = `\
   left: s.indent * depth,
 )[#par[#content#punct]]
 
-#let meta-row(label, value) = grid(
-  columns: (auto, 1fr),
-  gutter: 6pt,
-  [#text(weight: "bold", size: s.header-meta-size)[#label]],
-  [#pad(left: 4pt)[#value]],
-)`;
+#let meta-row(label, value) = [
+  #text(weight: "bold", size: s.header-meta-size)[#label]
+  #v(1pt)
+  #pad(left: 4pt)[#value]
+]`;
 
 /** Page arguments that don't vary by header content. References s.margin. */
 export const PAGE_BASE_ARGS = [

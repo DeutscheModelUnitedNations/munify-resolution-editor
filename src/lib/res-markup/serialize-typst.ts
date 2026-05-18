@@ -82,15 +82,15 @@ function splitFirstWord(text: string): { first: string; rest: string } {
 
 /** Formats a date value as "17 May 2026" (en-GB, fixed locale for determinism). */
 function formatDate(date: Date | string | undefined): string {
-	if (!date) return '';
+	const d = date ? new Date(date) : new Date();
 	try {
-		return new Date(date).toLocaleDateString('en-GB', {
+		return d.toLocaleDateString('en-GB', {
 			day: 'numeric',
 			month: 'long',
 			year: 'numeric'
 		});
 	} catch {
-		return String(date);
+		return String(date ?? '');
 	}
 }
 
@@ -130,12 +130,12 @@ function decodeEmblemDataUrl(dataUrl: string): string | null {
  * Without a path, embeds the SVG inline via `image.decode(bytes(...))` — requires
  * Typst ≥ 0.12 but produces a fully self-contained .typ file.
  */
-function emblemToTypst(svg: string, filePath?: string, width = '70pt', height = '70pt'): string {
+function emblemToTypst(svg: string, filePath?: string, width = '56pt', height = '56pt'): string {
 	if (filePath) {
-		return `#image("${filePath}", width: ${width}, height: ${height})`;
+		return `#image("${filePath}", width: ${width}, height: ${height}, fit: "contain")`;
 	}
 	const escaped = escapeTypstString(svg);
-	return `#image.decode(bytes("${escaped}"), format: "svg", width: ${width}, height: ${height})`;
+	return `#image.decode(bytes("${escaped}"), format: "svg", width: ${width}, height: ${height}, fit: "contain")`;
 }
 
 // ── Document setup ────────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ function emitDocumentSetup(header: ResolutionHeaderData): string {
 	const pageArgs = [...PAGE_BASE_ARGS];
 	if (runningHeader) {
 		pageArgs.push(
-			`  header: context if counter(page).get().first() > 1 [\n    #align(right)[#text(size: s.header-meta-size)[${runningHeader}]]\n  ]`
+			`  header: locate(loc => if counter(page).at(loc).first() > 1 [\n    #align(right)[#text(size: s.header-meta-size)[${runningHeader}]]\n  ])`
 		);
 	}
 
@@ -177,18 +177,18 @@ function emitHeaderSection(
 	const docNum = header.documentNumber ?? '';
 
 	if (leftText || abbrev || docNum) {
-		const leftCell = `#text(size: 9pt)[${escapeTypst(leftText)}]`;
+		const leftCell = `#align(bottom)[#text(size: 9pt)[${escapeTypst(leftText)}]]`;
 		const rightCell =
 			abbrev && docNum
-				? `#align(right)[#text(size: 16pt, weight: "bold")[${escapeTypst(abbrev)}]#text(size: 9pt)[/${escapeTypst(docNum)}]]`
+				? `#align(right + bottom)[#text(size: 16pt, weight: "bold")[${escapeTypst(abbrev)}]#text(size: 9pt)[/${escapeTypst(docNum)}]]`
 				: abbrev
-					? `#align(right)[#text(size: 16pt, weight: "bold")[${escapeTypst(abbrev)}]]`
-					: `#align(right)[#text(size: 9pt)[${escapeTypst(docNum)}]]`;
+					? `#align(right + bottom)[#text(size: 16pt, weight: "bold")[${escapeTypst(abbrev)}]]`
+					: `#align(right + bottom)[#text(size: 9pt)[${escapeTypst(docNum)}]]`;
 
 		lines.push(`#grid(\n  columns: (1fr, auto),\n  [${leftCell}],\n  [${rightCell}]\n)`);
-		lines.push('#v(4pt)');
+		lines.push('#v(0pt)');
 		lines.push(THIN_RULE);
-		lines.push('#v(6pt)');
+		lines.push('#v(0pt)');
 	}
 
 	// Row 2: emblem (left) | committee name (centre-left) | date (right)
@@ -200,7 +200,7 @@ function emitHeaderSection(
 	const dateStr = escapeTypst(formatDate(header.lastEdited));
 
 	lines.push(
-		`#grid(\n  columns: (auto, 1fr, auto),\n  gutter: 8pt,\n  [${emblemTypst}],\n  [#align(horizon)[#text(size: 18pt, weight: "bold")[${committeeName}]]],\n  [#align(right + horizon)[#text(size: 9pt)[${dateStr}]]]\n)`
+		`#grid(\n  columns: (auto, 1fr, auto),\n  gutter: 8pt,\n  [${emblemTypst}],\n  [#align(top)[#pad(top: 3pt)[#text(size: 18pt, weight: "bold")[${committeeName}]]]],\n  [#align(right + top)[#pad(top: 3pt)[#text(size: 9pt)[${dateStr}]]]]\n)`
 	);
 	lines.push('#v(8pt)');
 
