@@ -123,12 +123,18 @@ function decodeEmblemDataUrl(dataUrl: string): string | null {
 }
 
 /**
- * Renders an SVG string as a Typst image.decode() call.
- * Requires Typst ≥ 0.12. The SVG is embedded inline via bytes("...").
+ * Renders an SVG emblem for use in a Typst document.
+ *
+ * When `filePath` is given, emits `#image("path", ...)` — compatible with all
+ * Typst versions and required when using the CLI to compile.
+ * Without a path, embeds the SVG inline via `image.decode(bytes(...))` — requires
+ * Typst ≥ 0.12 but produces a fully self-contained .typ file.
  */
-function svgToTypstImage(svg: string, width = '70pt', height = '70pt'): string {
+function emblemToTypst(svg: string, filePath?: string, width = '70pt', height = '70pt'): string {
+	if (filePath) {
+		return `#image("${filePath}", width: ${width}, height: ${height})`;
+	}
 	const escaped = escapeTypstString(svg);
-	// image.decode with bytes requires Typst >= 0.12
 	return `#image.decode(bytes("${escaped}"), format: "svg", width: ${width}, height: ${height})`;
 }
 
@@ -158,7 +164,11 @@ function emitDocumentSetup(header: ResolutionHeaderData): string {
 
 // ── Visible document header ───────────────────────────────────────────────────
 
-function emitHeaderSection(header: ResolutionHeaderData, resolution: Resolution): string {
+function emitHeaderSection(
+	header: ResolutionHeaderData,
+	resolution: Resolution,
+	emblemPath?: string
+): string {
 	const lines: string[] = [];
 
 	// Row 1: conference title (left) | committee abbrev / doc number (right)
@@ -185,7 +195,7 @@ function emitHeaderSection(header: ResolutionHeaderData, resolution: Resolution)
 	const svgContent = header.conferenceEmblem
 		? (decodeEmblemDataUrl(header.conferenceEmblem) ?? unEmblemSvg)
 		: unEmblemSvg;
-	const emblemTypst = svgToTypstImage(svgContent);
+	const emblemTypst = emblemToTypst(svgContent, emblemPath);
 	const committeeName = escapeTypst(header.committeeFullName ?? resolution.committeeName);
 	const dateStr = escapeTypst(formatDate(header.lastEdited));
 
@@ -345,17 +355,21 @@ function emitOperativeClauses(clauses: OperativeClause[]): string {
  * `typst compile`. All header fields are optional; missing fields are omitted
  * from the output gracefully.
  *
- * Note: SVG emblem embedding via image.decode() requires Typst ≥ 0.12.
+ * @param options.emblemPath  When set, the emblem is referenced as a file path
+ *   (`#image("path")`) instead of being inlined via `image.decode(bytes(...))`.
+ *   Required when compiling with Typst < 0.12 or when using the CLI (pass the
+ *   path relative to the .typ file's location).
  */
 export function resolutionToTypst(
 	resolution: Resolution,
-	header: ResolutionHeaderData = {}
+	header: ResolutionHeaderData = {},
+	options: { emblemPath?: string } = {}
 ): string {
 	const parts: string[] = [];
 
 	parts.push(emitDocumentSetup(header));
 	parts.push('');
-	parts.push(emitHeaderSection(header, resolution));
+	parts.push(emitHeaderSection(header, resolution, options.emblemPath));
 	parts.push(emitBodyOpening(header, resolution));
 	parts.push('');
 

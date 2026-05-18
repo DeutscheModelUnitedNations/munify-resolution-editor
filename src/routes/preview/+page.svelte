@@ -10,6 +10,39 @@
 	import type { Resolution, ResolutionHeaderData } from '$lib/schema/resolution';
 	import { resolutionToTypst } from '$lib/res-markup';
 
+	let downloadingPdf = $state(false);
+	let pdfError = $state<string | null>(null);
+
+	async function downloadPdf() {
+		downloadingPdf = true;
+		pdfError = null;
+		try {
+			const res = await fetch('/api/pdf', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ resolution, header: headerData as ResolutionHeaderData })
+			});
+			if (!res.ok) {
+				const msg = await res.text();
+				pdfError = msg;
+				return;
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'resolution.pdf';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+		} catch (e) {
+			pdfError = e instanceof Error ? e.message : String(e);
+		} finally {
+			downloadingPdf = false;
+		}
+	}
+
 	// Sample resolution for preview
 	const resolution: Resolution = {
 		committeeName: 'Security Council',
@@ -215,10 +248,22 @@
 			<i class="fa-solid fa-file-code"></i>
 			Download .typ
 		</button>
-		<button type="button" class="btn btn-sm btn-outline" onclick={() => window.print()}>
-			<i class="fa-solid fa-print"></i>
-			Print
+		<button
+			type="button"
+			class="btn btn-sm btn-outline"
+			onclick={downloadPdf}
+			disabled={downloadingPdf}
+		>
+			{#if downloadingPdf}
+				<span class="loading loading-spinner loading-xs"></span>
+			{:else}
+				<i class="fa-solid fa-file-pdf"></i>
+			{/if}
+			Download PDF
 		</button>
+		{#if pdfError}
+			<span class="text-error text-xs self-center">{pdfError}</span>
+		{/if}
 	</div>
 
 	{#if showPrintPreview}
