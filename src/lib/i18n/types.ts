@@ -102,6 +102,15 @@ export interface ResolutionEditorLabels {
 	amendmentAlterPosition: string;
 	amendmentRejectedClause: string;
 
+	// Operative paragraph (standalone editor/viewer)
+	operativeParagraph: string;
+	operativeParagraphShowDiff: string;
+	operativeParagraphHideDiff: string;
+	operativeParagraphInvalidMarkup: string;
+	operativeParagraphEmpty: string;
+	operativeParagraphOldVersion: string;
+	operativeParagraphNewVersion: string;
+
 	// Common
 	close: string;
 	cancel: string;

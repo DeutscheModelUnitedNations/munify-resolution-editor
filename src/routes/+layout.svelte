@@ -26,6 +26,7 @@
 				<li><a href="{base}/">Home</a></li>
 				<li><a href="{base}/editor">Editor Demo</a></li>
 				<li><a href="{base}/preview">Preview Demo</a></li>
+				<li><a href="{base}/operative-paragraph">Operative Paragraph</a></li>
 				<li>
 					<a
 						href="https://github.com/DeutscheModelUnitedNations/munify-resolution-editor"

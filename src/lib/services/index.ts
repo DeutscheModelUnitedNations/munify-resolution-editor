@@ -18,3 +18,15 @@ export {
 	parseOperativeText,
 	countOperativeClauses
 } from './resolutionParser';
+
+export {
+	buildRenderClause,
+	buildDiffRenderClause,
+	type ChangeStatus,
+	type RenderWord,
+	type RenderText,
+	type RenderSubclauses,
+	type RenderBlock,
+	type RenderItem,
+	type RenderClause
+} from './paragraphDiff';
