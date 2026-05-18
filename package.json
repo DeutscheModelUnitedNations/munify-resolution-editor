@@ -1,6 +1,6 @@
 {
 	"name": "@deutschemodelunitednations/munify-resolution-editor",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"description": "UN Resolution Editor component for MUNify applications",
 	"type": "module",
 	"svelte": "./dist/index.js",
