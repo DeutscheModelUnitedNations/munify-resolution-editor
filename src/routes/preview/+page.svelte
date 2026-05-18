@@ -215,6 +215,10 @@
 			<i class="fa-solid fa-file-code"></i>
 			Download .typ
 		</button>
+		<button type="button" class="btn btn-sm btn-outline" onclick={() => window.print()}>
+			<i class="fa-solid fa-print"></i>
+			Print
+		</button>
 	</div>
 
 	{#if showPrintPreview}
