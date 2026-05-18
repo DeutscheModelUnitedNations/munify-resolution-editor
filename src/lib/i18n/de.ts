@@ -133,6 +133,15 @@ Zu formatierender Text:`,
 	resolutionDisclaimer:
 		'Dieses Dokument wurde im Rahmen einer {conferenceName}-Simulation erstellt und besitzt keine rechtliche Gültigkeit.',
 
+	// Operative paragraph (standalone editor/viewer)
+	operativeParagraph: 'Operativer Absatz',
+	operativeParagraphShowDiff: 'Änderungen anzeigen',
+	operativeParagraphHideDiff: 'Änderungen ausblenden',
+	operativeParagraphInvalidMarkup: 'Ungültiges RES-Markup',
+	operativeParagraphEmpty: 'Noch kein Inhalt.',
+	operativeParagraphOldVersion: 'Vorherige Fassung',
+	operativeParagraphNewVersion: 'Aktuelle Fassung',
+
 	// Common
 	close: 'Schließen',
 	cancel: 'Abbrechen',

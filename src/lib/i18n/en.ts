@@ -131,6 +131,15 @@ Text to format:`,
 	resolutionDisclaimer:
 		'This document was created as part of a {conferenceName} simulation and has no legal validity.',
 
+	// Operative paragraph (standalone editor/viewer)
+	operativeParagraph: 'Operative Paragraph',
+	operativeParagraphShowDiff: 'Show changes',
+	operativeParagraphHideDiff: 'Hide changes',
+	operativeParagraphInvalidMarkup: 'Invalid RES-Markup',
+	operativeParagraphEmpty: 'No content yet.',
+	operativeParagraphOldVersion: 'Previous version',
+	operativeParagraphNewVersion: 'Current version',
+
 	// Common
 	close: 'Close',
 	cancel: 'Cancel',

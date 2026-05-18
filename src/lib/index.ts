@@ -32,7 +32,9 @@ export {
 	PhraseSuggestions,
 	ImportModal,
 	ResolutionImportModal,
-	ResolutionPrintPreview
+	ResolutionPrintPreview,
+	OperativeParagraphPreview,
+	OperativeParagraphEditor
 } from './components';
 
 // RES-Markup interchange format (also available via the `/res-markup` subpath)
@@ -138,6 +140,18 @@ export {
 } from './services/resolutionParser';
 
 export { stripTerminalPunctuation, normalizeImportedResolution } from './services/importNormalize';
+
+export {
+	buildRenderClause,
+	buildDiffRenderClause,
+	type ChangeStatus,
+	type RenderWord,
+	type RenderText,
+	type RenderSubclauses,
+	type RenderBlock,
+	type RenderItem,
+	type RenderClause
+} from './services/paragraphDiff';
 
 // i18n
 export type { ResolutionEditorLabels, PartialLabels } from './i18n/types';

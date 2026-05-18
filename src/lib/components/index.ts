@@ -16,3 +16,5 @@ export { default as PhraseSuggestions } from './PhraseSuggestions.svelte';
 export { default as ImportModal } from './ImportModal.svelte';
 export { default as ResolutionImportModal } from './ResolutionImportModal.svelte';
 export { default as ResolutionPrintPreview } from './ResolutionPrintPreview.svelte';
+export { default as OperativeParagraphPreview } from './OperativeParagraphPreview.svelte';
+export { default as OperativeParagraphEditor } from './OperativeParagraphEditor.svelte';
