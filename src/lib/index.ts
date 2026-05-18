@@ -45,6 +45,7 @@ export {
 	isIdempotent,
 	roundTrips,
 	suggestResolutionFilename,
+	resolutionToTypst,
 	RES_VERSION,
 	RES_FILE_EXTENSION,
 	type ParseResult,

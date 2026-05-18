@@ -104,8 +104,9 @@
 		"yjs": "^13.6.30"
 	},
 	"dependencies": {
-		"zod": "^3.24.1",
-		"pagedjs": "^0.4.3"
+		"pagedjs": "^0.4.3",
+		"typst": "^0.10.0-8",
+		"zod": "^3.24.1"
 	},
 	"repository": {
 		"type": "git",

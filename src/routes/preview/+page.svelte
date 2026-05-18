@@ -8,6 +8,40 @@
 	import { englishPreamblePhrases, englishOperativePhrases } from '$lib/phrases/en';
 	import { createPhrasePatterns } from '$lib/services/phraseValidation';
 	import type { Resolution, ResolutionHeaderData } from '$lib/schema/resolution';
+	import { resolutionToTypst } from '$lib/res-markup';
+
+	let downloadingPdf = $state(false);
+	let pdfError = $state<string | null>(null);
+
+	async function downloadPdf() {
+		downloadingPdf = true;
+		pdfError = null;
+		try {
+			const res = await fetch('/api/pdf', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ resolution, header: headerData as ResolutionHeaderData })
+			});
+			if (!res.ok) {
+				const msg = await res.text();
+				pdfError = msg;
+				return;
+			}
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'resolution.pdf';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+		} catch (e) {
+			pdfError = e instanceof Error ? e.message : String(e);
+		} finally {
+			downloadingPdf = false;
+		}
+	}
 
 	// Sample resolution for preview
 	const resolution: Resolution = {
@@ -163,6 +197,19 @@
 	let useDefaultHeader = $state(true);
 	let customFooter = $state(false);
 	let showPrintPreview = $state(false);
+
+	function downloadTyp() {
+		const typst = resolutionToTypst(resolution, headerData);
+		const blob = new Blob([typst], { type: 'text/plain' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = 'resolution.typ';
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -194,6 +241,29 @@
 			<input type="checkbox" class="toggle toggle-info" bind:checked={showPrintPreview} />
 			<span class="label-text">Print Preview (Paged.js)</span>
 		</label>
+	</div>
+
+	<div class="flex flex-wrap gap-2 mb-6">
+		<button type="button" class="btn btn-sm btn-outline" onclick={downloadTyp}>
+			<i class="fa-solid fa-file-code"></i>
+			Download .typ
+		</button>
+		<button
+			type="button"
+			class="btn btn-sm btn-outline"
+			onclick={downloadPdf}
+			disabled={downloadingPdf}
+		>
+			{#if downloadingPdf}
+				<span class="loading loading-spinner loading-xs"></span>
+			{:else}
+				<i class="fa-solid fa-file-pdf"></i>
+			{/if}
+			Download PDF
+		</button>
+		{#if pdfError}
+			<span class="text-error text-xs self-center">{pdfError}</span>
+		{/if}
 	</div>
 
 	{#if showPrintPreview}
