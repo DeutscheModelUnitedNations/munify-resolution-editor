@@ -215,7 +215,7 @@
 <div class="container mx-auto px-4 py-8 max-w-5xl">
 	<div class="mb-6">
 		<h1 class="text-3xl font-bold mb-2">
-			<i class="fa-solid fa-eye text-primary"></i>
+			<i class="ph-fill ph-eye text-primary"></i>
 			Preview Demo
 		</h1>
 		<p class="text-base-content/70">
@@ -245,7 +245,7 @@
 
 	<div class="flex flex-wrap gap-2 mb-6">
 		<button type="button" class="btn btn-sm btn-outline" onclick={downloadTyp}>
-			<i class="fa-solid fa-file-code"></i>
+			<i class="ph-fill ph-file-code"></i>
 			Download .typ
 		</button>
 		<button
@@ -257,7 +257,7 @@
 			{#if downloadingPdf}
 				<span class="loading loading-spinner loading-xs"></span>
 			{:else}
-				<i class="fa-solid fa-file-pdf"></i>
+				<i class="ph-fill ph-file-pdf"></i>
 			{/if}
 			Download PDF
 		</button>
@@ -294,7 +294,7 @@
 						class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm print:bg-white print:border-blue-400"
 					>
 						<div class="flex items-center gap-2 text-blue-700">
-							<i class="fa-solid fa-info-circle"></i>
+							<i class="ph-fill ph-info"></i>
 							<span>This uses <code>ResolutionDocumentHeader</code> component + custom content</span
 							>
 						</div>
@@ -305,7 +305,7 @@
 						class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 print:bg-white print:border-purple-400"
 					>
 						<div class="flex items-center gap-2 text-purple-700">
-							<i class="fa-solid fa-star"></i>
+							<i class="ph-fill ph-star"></i>
 							<span class="font-semibold">Custom Header Extension Point</span>
 						</div>
 						<p class="text-sm text-purple-600 mt-2">
@@ -330,7 +330,7 @@
 					<!-- Additional custom footer content -->
 					<div class="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
 						<div class="flex items-center gap-2 text-gray-700">
-							<i class="fa-solid fa-signature"></i>
+							<i class="ph-fill ph-signature"></i>
 							<span class="font-semibold">Custom Footer Extension</span>
 						</div>
 						<div class="flex gap-8 mt-4 text-sm text-gray-500">
@@ -353,21 +353,21 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-palette"></i>
+					<i class="ph-fill ph-palette"></i>
 					Formatting Features
 				</h2>
 				<ul class="space-y-2 text-sm text-base-content/70">
-					<li><i class="fa-solid fa-check text-success mr-2"></i>Italic opening phrases</li>
+					<li><i class="ph-fill ph-check text-success mr-2"></i>Italic opening phrases</li>
 					<li>
-						<i class="fa-solid fa-check text-success mr-2"></i>Proper clause numbering (Roman,
+						<i class="ph-fill ph-check text-success mr-2"></i>Proper clause numbering (Roman,
 						letters)
 					</li>
 					<li>
-						<i class="fa-solid fa-check text-success mr-2"></i>Nested subclauses up to 4 levels
+						<i class="ph-fill ph-check text-success mr-2"></i>Nested subclauses up to 4 levels
 					</li>
-					<li><i class="fa-solid fa-check text-success mr-2"></i>UN document header format</li>
-					<li><i class="fa-solid fa-check text-success mr-2"></i>Conference emblem support</li>
-					<li><i class="fa-solid fa-check text-success mr-2"></i>Print-optimized styling</li>
+					<li><i class="ph-fill ph-check text-success mr-2"></i>UN document header format</li>
+					<li><i class="ph-fill ph-check text-success mr-2"></i>Conference emblem support</li>
+					<li><i class="ph-fill ph-check text-success mr-2"></i>Print-optimized styling</li>
 				</ul>
 			</div>
 		</div>
@@ -375,7 +375,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-plug"></i>
+					<i class="ph-fill ph-plug"></i>
 					Extension Points
 				</h2>
 				<p class="text-sm text-base-content/70 mb-3">
@@ -408,7 +408,7 @@
 	<div class="card bg-base-200 mt-6">
 		<div class="card-body">
 			<h2 class="card-title">
-				<i class="fa-solid fa-code"></i>
+				<i class="ph-fill ph-code"></i>
 				Usage Example
 			</h2>
 			<p class="text-sm text-base-content/70 mb-3">

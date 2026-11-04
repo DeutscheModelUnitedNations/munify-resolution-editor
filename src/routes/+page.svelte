@@ -37,7 +37,7 @@
 		<div class="hero-content text-center">
 			<div class="max-w-lg">
 				<h1 class="text-5xl font-bold mb-4">
-					<i class="fa-solid fa-file-lines text-primary"></i>
+					<i class="ph-fill ph-file-text text-primary"></i>
 					Resolution Editor
 				</h1>
 				<p class="text-xl text-base-content/70 mb-6">
@@ -46,11 +46,11 @@
 				</p>
 				<div class="flex gap-4 justify-center">
 					<a href="{base}/editor" class="btn btn-primary">
-						<i class="fa-solid fa-edit"></i>
+						<i class="ph-fill ph-pencil-simple"></i>
 						Try Editor
 					</a>
 					<a href="{base}/preview" class="btn btn-outline">
-						<i class="fa-solid fa-eye"></i>
+						<i class="ph-fill ph-eye"></i>
 						View Preview
 					</a>
 				</div>
@@ -62,7 +62,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-pen-to-square text-primary"></i>
+					<i class="ph-fill ph-note-pencil text-primary"></i>
 					Full Resolution Editor
 				</h2>
 				<p>
@@ -75,7 +75,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-check-circle text-primary"></i>
+					<i class="ph-fill ph-check-circle text-primary"></i>
 					Phrase Validation
 				</h2>
 				<p>
@@ -88,7 +88,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-file-import text-primary"></i>
+					<i class="ph-fill ph-file-arrow-up text-primary"></i>
 					Import from Text
 				</h2>
 				<p>
@@ -101,7 +101,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-eye text-primary"></i>
+					<i class="ph-fill ph-eye text-primary"></i>
 					Preview Mode
 				</h2>
 				<p>
@@ -114,7 +114,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-language text-primary"></i>
+					<i class="ph-fill ph-translate text-primary"></i>
 					Fully Customizable
 				</h2>
 				<p>
@@ -127,7 +127,7 @@
 		<div class="card bg-base-200">
 			<div class="card-body">
 				<h2 class="card-title">
-					<i class="fa-solid fa-puzzle-piece text-primary"></i>
+					<i class="ph-fill ph-puzzle-piece text-primary"></i>
 					Extension Points
 				</h2>
 				<p>
@@ -141,7 +141,7 @@
 	<div class="card bg-base-200 mb-8">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">
-				<i class="fa-solid fa-download"></i>
+				<i class="ph-fill ph-download-simple"></i>
 				Installation
 			</h2>
 			<div class="mockup-code">
@@ -161,7 +161,7 @@
 	<div class="card bg-base-200 mb-8">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">
-				<i class="fa-solid fa-code"></i>
+				<i class="ph-fill ph-code"></i>
 				Basic Usage
 			</h2>
 			<div class="mockup-code text-sm overflow-x-auto">
@@ -173,7 +173,7 @@
 	<div class="card bg-base-200">
 		<div class="card-body">
 			<h2 class="card-title text-2xl mb-4">
-				<i class="fa-solid fa-plug"></i>
+				<i class="ph-fill ph-plug"></i>
 				Extension Points
 			</h2>
 			<p class="mb-4">

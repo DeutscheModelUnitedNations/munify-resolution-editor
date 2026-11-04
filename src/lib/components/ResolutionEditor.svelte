@@ -245,11 +245,11 @@
 					class="btn btn-sm btn-ghost"
 					onclick={() => (showResolutionImport = true)}
 				>
-					<i class="fa-solid fa-file-import"></i>
+					<i class="ph-fill ph-file-arrow-up"></i>
 					{t.resolutionImportResolution}
 				</button>
 				<button type="button" class="btn btn-sm btn-ghost" onclick={handleResolutionExport}>
-					<i class="fa-solid fa-file-export"></i>
+					<i class="ph-fill ph-file-arrow-down"></i>
 					{t.resolutionExport}
 				</button>
 			</div>
@@ -263,7 +263,7 @@
 			<div class="space-y-3">
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold text-base-content/80">
-						<i class="fa-solid fa-quote-left mr-2"></i>
+						<i class="ph-fill ph-quotes mr-2"></i>
 						{t.resolutionPreambleClauses}
 					</h3>
 					<div class="flex gap-2">
@@ -272,7 +272,7 @@
 							class="btn btn-sm btn-ghost"
 							onclick={() => (showPreambleLookup = true)}
 						>
-							<i class="fa-solid fa-book"></i>
+							<i class="ph-fill ph-book"></i>
 							{t.phraseLookup}
 						</button>
 						<button
@@ -280,7 +280,7 @@
 							class="btn btn-sm btn-ghost"
 							onclick={() => (showPreambleImport = true)}
 						>
-							<i class="fa-solid fa-file-import"></i>
+							<i class="ph-fill ph-file-arrow-up"></i>
 							{t.resolutionImport}
 						</button>
 						<button
@@ -288,7 +288,7 @@
 							class="btn btn-sm btn-ghost"
 							onclick={() => store.addPreambleClause()}
 						>
-							<i class="fa-solid fa-plus"></i>
+							<i class="ph-fill ph-plus"></i>
 							{t.resolutionAddClause}
 						</button>
 					</div>
@@ -304,7 +304,7 @@
 							class="btn btn-sm btn-ghost mt-2"
 							onclick={() => store.addPreambleClause()}
 						>
-							<i class="fa-solid fa-plus"></i>
+							<i class="ph-fill ph-plus"></i>
 							{t.resolutionAddFirstClause}
 						</button>
 					</div>
@@ -347,7 +347,7 @@
 							class="btn btn-sm btn-ghost w-full"
 							onclick={() => store.addPreambleClause()}
 						>
-							<i class="fa-solid fa-plus"></i>
+							<i class="ph-fill ph-plus"></i>
 							{t.resolutionAddClause}
 						</button>
 					</div>
@@ -358,7 +358,7 @@
 			<div class="space-y-3">
 				<div class="flex items-center justify-between">
 					<h3 class="font-semibold text-base-content/80">
-						<i class="fa-solid fa-list-ol mr-2"></i>
+						<i class="ph-fill ph-list-numbers mr-2"></i>
 						{t.resolutionOperativeClauses}
 					</h3>
 					<div class="flex gap-2">
@@ -367,7 +367,7 @@
 							class="btn btn-sm btn-ghost"
 							onclick={() => (showOperativeLookup = true)}
 						>
-							<i class="fa-solid fa-book"></i>
+							<i class="ph-fill ph-book"></i>
 							{t.phraseLookup}
 						</button>
 						<button
@@ -375,7 +375,7 @@
 							class="btn btn-sm btn-ghost"
 							onclick={() => (showOperativeImport = true)}
 						>
-							<i class="fa-solid fa-file-import"></i>
+							<i class="ph-fill ph-file-arrow-up"></i>
 							{t.resolutionImport}
 						</button>
 						<button
@@ -383,7 +383,7 @@
 							class="btn btn-sm btn-ghost"
 							onclick={() => store.addOperativeClause()}
 						>
-							<i class="fa-solid fa-plus"></i>
+							<i class="ph-fill ph-plus"></i>
 							{t.resolutionAddClause}
 						</button>
 					</div>
@@ -399,7 +399,7 @@
 							class="btn btn-sm btn-ghost mt-2"
 							onclick={() => store.addOperativeClause()}
 						>
-							<i class="fa-solid fa-plus"></i>
+							<i class="ph-fill ph-plus"></i>
 							{t.resolutionAddFirstClause}
 						</button>
 					</div>
@@ -443,7 +443,7 @@
 							class="btn btn-sm btn-ghost w-full"
 							onclick={() => store.addOperativeClause()}
 						>
-							<i class="fa-solid fa-plus"></i>
+							<i class="ph-fill ph-plus"></i>
 							{t.resolutionAddClause}
 						</button>
 					</div>
@@ -454,7 +454,7 @@
 			<div class="border-t border-base-300 pt-6">
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-base-content/80">
-						<i class="fa-solid fa-eye mr-2"></i>
+						<i class="ph-fill ph-eye mr-2"></i>
 						{t.resolutionPreview}
 					</h3>
 					<button
@@ -462,7 +462,7 @@
 						class="btn btn-ghost btn-xs"
 						onclick={() => (showPreview = !showPreview)}
 					>
-						<i class="fa-solid {showPreview ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+						<i class="ph-fill {showPreview ? 'ph-caret-up' : 'ph-caret-down'}"></i>
 						{showPreview ? t.resolutionHidePreview : t.resolutionShowPreview}
 					</button>
 				</div>

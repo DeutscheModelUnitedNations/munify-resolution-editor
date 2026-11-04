@@ -24,13 +24,33 @@ bun add -d @deutschemodelunitednations/munify-resolution-editor
 
 ## Peer Dependencies
 
-| Peer            | Required for        | Optional? |
-| --------------- | ------------------- | --------- |
-| `svelte ^5.0.0` | always              | no        |
-| `yjs ^13.6.0`   | `/yjs` subpath only | yes       |
-| `y-protocols`   | `/yjs` subpath only | yes       |
+| Peer                         | Required for        | Optional? |
+| ---------------------------- | ------------------- | --------- |
+| `svelte ^5.0.0`              | always              | no        |
+| `@phosphor-icons/web ^2.1.2` | icons (always)      | no        |
+| `yjs ^13.6.0`                | `/yjs` subpath only | yes       |
+| `y-protocols`                | `/yjs` subpath only | yes       |
 
 If you only use the native (JSON) store you do **not** need to install `yjs` / `y-protocols`.
+
+## Icons (Phosphor)
+
+The components render [Phosphor Icons](https://phosphoricons.com) as web-font classes (`<i class="ph-fill ph-plus"></i>`). The library does **not** bundle the icon CSS, so the host application must load it once, globally. The components use the `fill` weight; load `regular` and `duotone` too if your app uses them.
+
+```bash
+bun add @phosphor-icons/web
+```
+
+```svelte
+<!-- e.g. src/routes/+layout.svelte -->
+<script>
+	import '@phosphor-icons/web/fill';
+	import '@phosphor-icons/web/regular';
+	import '@phosphor-icons/web/duotone';
+</script>
+```
+
+Without the Phosphor CSS the icon buttons render empty. Up to `0.6.x` the library used Font Awesome; see [`MIGRATION.md`](./MIGRATION.md#migrating-from-06x-to-07x--font-awesome--phosphor-icons).
 
 ## Styling Setup
 

@@ -153,7 +153,7 @@
 						class="btn btn-ghost btn-xs gap-1 text-error"
 						onclick={() => deleteBlock(block.id)}
 					>
-						<i class="fa-solid fa-trash"></i>
+						<i class="ph-fill ph-trash"></i>
 						{t.resolutionDeleteBlock}
 					</button>
 				</div>
@@ -174,7 +174,7 @@
 						class="btn btn-ghost btn-xs gap-1 text-primary"
 						onclick={addContinuationText}
 					>
-						<i class="fa-solid fa-paragraph"></i>
+						<i class="ph-fill ph-paragraph"></i>
 						{t.resolutionAddContinuation}
 					</button>
 				</div>
@@ -185,7 +185,7 @@
 	<div class="flex flex-wrap gap-1 {clause.blocks[0]?.type === 'text' ? 'ml-10' : ''} mt-2">
 		{#if validationError}
 			<span class="badge badge-warning badge-sm gap-1">
-				<i class="fa-solid fa-triangle-exclamation"></i>
+				<i class="ph-fill ph-warning"></i>
 				{t.resolutionUnknownPhrase}
 			</span>
 		{/if}
@@ -198,7 +198,7 @@
 			onclick={onMoveUp}
 			disabled={disabled || !canMoveUp}
 		>
-			<i class="fa-solid fa-chevron-up"></i>
+			<i class="ph-fill ph-caret-up"></i>
 			{t.resolutionMoveUp}
 		</button>
 		<button
@@ -207,7 +207,7 @@
 			onclick={onMoveDown}
 			disabled={disabled || !canMoveDown}
 		>
-			<i class="fa-solid fa-chevron-down"></i>
+			<i class="ph-fill ph-caret-down"></i>
 			{t.resolutionMoveDown}
 		</button>
 		{#if !hasSubclausesBlock}
@@ -216,12 +216,12 @@
 				class="btn btn-ghost btn-xs gap-1 text-primary"
 				onclick={addSubClausesBlock}
 			>
-				<i class="fa-solid fa-indent"></i>
+				<i class="ph-fill ph-text-indent"></i>
 				{t.resolutionAddSubClause}
 			</button>
 		{/if}
 		<button type="button" class="btn btn-ghost btn-xs gap-1 text-error" onclick={onDelete}>
-			<i class="fa-solid fa-trash"></i>
+			<i class="ph-fill ph-trash"></i>
 			{t.resolutionDeleteClause}
 		</button>
 	</div>

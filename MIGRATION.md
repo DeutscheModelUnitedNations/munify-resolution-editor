@@ -1,3 +1,30 @@
+# Migrating from `0.6.x` to `0.7.x` — Font Awesome → Phosphor Icons
+
+**Breaking change.** All icons in the components switched from Font Awesome (`fa-solid fa-*`) to [Phosphor Icons](https://phosphoricons.com) web-font classes (`ph-fill ph-*`). The library still does not bundle any icon CSS, so the host application has to load Phosphor instead of Font Awesome. Without it the icon buttons render empty.
+
+1. Install the new peer dependency:
+
+   ```bash
+   bun add @phosphor-icons/web
+   ```
+
+2. Load the Phosphor CSS once, globally (bundled from npm, no CDN needed). The components use the `fill` weight; `regular` and `duotone` are optional for your own markup:
+
+   ```svelte
+   <!-- src/routes/+layout.svelte -->
+   <script>
+   	import '@phosphor-icons/web/fill';
+   	import '@phosphor-icons/web/regular';
+   	import '@phosphor-icons/web/duotone';
+   </script>
+   ```
+
+3. If Font Awesome was only loaded for this library, remove it (CDN `<link>`, kit script or npm package).
+
+No component props, store APIs, i18n keys or schemas changed.
+
+---
+
 # Migrating from `0.1.x` to `0.2.x`
 
 `0.2` introduces the `ResolutionStore` abstraction. The editor no longer owns a `$state<Resolution>` — the host application instantiates a store and passes it in. All editing flows through the store's typed mutators.

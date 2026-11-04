@@ -426,7 +426,7 @@
 	<!-- Empty state -->
 	{#if nonEmptyPreamble.length === 0 && nonEmptyOperative.length === 0}
 		<div class="text-center text-base-content/50 py-8 font-sans">
-			<i class="fa-solid fa-file-lines text-4xl mb-2"></i>
+			<i class="ph-fill ph-file-text text-4xl mb-2"></i>
 			<p>{t.resolutionNoClausesYet}</p>
 		</div>
 	{/if}

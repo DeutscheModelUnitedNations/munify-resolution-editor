@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0]
+
+### Changed
+
+- **Breaking: icons switched from Font Awesome to Phosphor Icons.** Every component now renders `@phosphor-icons/web` classes (`<i class="ph-fill ph-*"></i>`) instead of `fa-solid fa-*`. The library does not bundle the icon CSS: host apps must load the Phosphor CSS (at least the `fill` weight) instead of Font Awesome. See [`MIGRATION.md`](./MIGRATION.md#migrating-from-06x-to-07x--font-awesome--phosphor-icons).
+- `@phosphor-icons/web ^2.1.2` is a new required peer dependency.
+- The demo site bundles the Phosphor CSS from npm instead of loading Font Awesome from a CDN.
+
 ## [0.2.2]
 
 ### Fixed
