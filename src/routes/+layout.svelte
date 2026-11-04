@@ -1,4 +1,7 @@
 <script lang="ts">
+	import '@phosphor-icons/web/regular';
+	import '@phosphor-icons/web/fill';
+	import '@phosphor-icons/web/duotone';
 	import '../app.css';
 	import { base } from '$app/paths';
 
@@ -7,17 +10,13 @@
 
 <svelte:head>
 	<title>MUNify Resolution Editor</title>
-	<link
-		rel="stylesheet"
-		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-	/>
 </svelte:head>
 
 <div class="min-h-screen bg-base-100">
 	<nav class="navbar bg-base-200 border-b border-base-300">
 		<div class="flex-1">
 			<a href="{base}/" class="btn btn-ghost text-xl">
-				<i class="fa-solid fa-file-lines"></i>
+				<i class="ph-fill ph-file-text"></i>
 				MUNify Resolution Editor
 			</a>
 		</div>
@@ -33,7 +32,7 @@
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						<i class="fa-brands fa-github"></i>
+						<i class="ph ph-github-logo"></i>
 						GitHub
 					</a>
 				</li>
@@ -48,7 +47,7 @@
 	<footer class="footer footer-center p-4 bg-base-200 text-base-content border-t border-base-300">
 		<aside>
 			<p>
-				<i class="fa-solid fa-copyright"></i>
+				<i class="ph-fill ph-copyright"></i>
 				2026 Deutsche Model United Nations e.V. - MIT License
 			</p>
 		</aside>

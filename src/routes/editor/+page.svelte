@@ -117,7 +117,7 @@
 <div class="container mx-auto px-4 py-8 max-w-6xl">
 	<div class="mb-6">
 		<h1 class="text-3xl font-bold mb-2">
-			<i class="fa-solid fa-edit text-primary"></i>
+			<i class="ph-fill ph-pencil-simple text-primary"></i>
 			Interactive Editor Demo
 		</h1>
 		<p class="text-base-content/70">
@@ -143,28 +143,28 @@
 			<div class="card bg-base-200">
 				<div class="card-body">
 					<h2 class="card-title text-lg">
-						<i class="fa-solid fa-info-circle"></i>
+						<i class="ph-fill ph-info"></i>
 						How to Use
 					</h2>
 					<ul class="text-sm space-y-2 text-base-content/70">
 						<li>
-							<i class="fa-solid fa-plus text-primary mr-2"></i>
+							<i class="ph-fill ph-plus text-primary mr-2"></i>
 							Click "+" to add new clauses
 						</li>
 						<li>
-							<i class="fa-solid fa-indent text-primary mr-2"></i>
+							<i class="ph-fill ph-text-indent text-primary mr-2"></i>
 							Use indent/outdent buttons for subclauses
 						</li>
 						<li>
-							<i class="fa-solid fa-book text-primary mr-2"></i>
+							<i class="ph-fill ph-book text-primary mr-2"></i>
 							Use phrase lookup for valid opening phrases
 						</li>
 						<li>
-							<i class="fa-solid fa-file-import text-primary mr-2"></i>
+							<i class="ph-fill ph-file-arrow-up text-primary mr-2"></i>
 							Import text with automatic clause detection
 						</li>
 						<li>
-							<i class="fa-solid fa-arrows-up-down text-primary mr-2"></i>
+							<i class="ph-fill ph-arrows-down-up text-primary mr-2"></i>
 							Drag or use arrows to reorder clauses
 						</li>
 					</ul>
@@ -174,7 +174,7 @@
 			<div class="card bg-base-200">
 				<div class="card-body">
 					<h2 class="card-title text-lg">
-						<i class="fa-solid fa-check-circle"></i>
+						<i class="ph-fill ph-check-circle"></i>
 						Features Demonstrated
 					</h2>
 					<div class="flex flex-wrap gap-2">
@@ -191,7 +191,7 @@
 			<div class="card bg-base-200">
 				<div class="card-body">
 					<h2 class="card-title text-lg">
-						<i class="fa-solid fa-code"></i>
+						<i class="ph-fill ph-code"></i>
 						Resolution JSON
 					</h2>
 					<div class="mockup-code text-xs max-h-64 overflow-y-auto">

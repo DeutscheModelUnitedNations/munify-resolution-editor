@@ -125,7 +125,7 @@
 	<div class="flex flex-wrap gap-1 {label ? 'ml-10' : ''}">
 		{#if validationError}
 			<span class="badge badge-warning badge-sm gap-1">
-				<i class="fa-solid fa-triangle-exclamation"></i>
+				<i class="ph-fill ph-warning"></i>
 				{t.resolutionUnknownPhrase}
 			</span>
 		{/if}
@@ -138,7 +138,7 @@
 			onclick={onMoveUp}
 			disabled={disabled || !canMoveUp}
 		>
-			<i class="fa-solid fa-chevron-up"></i>
+			<i class="ph-fill ph-caret-up"></i>
 			{t.resolutionMoveUp}
 		</button>
 		<button
@@ -147,7 +147,7 @@
 			onclick={onMoveDown}
 			disabled={disabled || !canMoveDown}
 		>
-			<i class="fa-solid fa-chevron-down"></i>
+			<i class="ph-fill ph-caret-down"></i>
 			{t.resolutionMoveDown}
 		</button>
 		{#if showAddSubClause && onAddSubClause}
@@ -156,12 +156,12 @@
 				class="btn btn-ghost btn-xs gap-1 text-primary"
 				onclick={onAddSubClause}
 			>
-				<i class="fa-solid fa-indent"></i>
+				<i class="ph-fill ph-text-indent"></i>
 				{t.resolutionAddSubClause}
 			</button>
 		{/if}
 		<button type="button" class="btn btn-ghost btn-xs gap-1 text-error" onclick={onDelete}>
-			<i class="fa-solid fa-trash"></i>
+			<i class="ph-fill ph-trash"></i>
 			{t.resolutionDeleteClause}
 		</button>
 	</div>

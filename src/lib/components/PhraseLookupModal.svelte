@@ -73,7 +73,7 @@
 	<div class="modal-box max-w-lg">
 		<div class="flex items-center justify-between mb-4">
 			<h3 class="font-bold text-lg">
-				<i class="fa-solid fa-book mr-2"></i>
+				<i class="ph-fill ph-book mr-2"></i>
 				{title ?? t.phraseLookupTitle}
 			</h3>
 			<button
@@ -82,7 +82,7 @@
 				onclick={onClose}
 				aria-label={t.close}
 			>
-				<i class="fa-solid fa-xmark"></i>
+				<i class="ph-fill ph-x"></i>
 			</button>
 		</div>
 
@@ -94,7 +94,7 @@
 		/>
 
 		<div class="alert alert-info mt-3 py-2 text-sm">
-			<i class="fa-solid fa-circle-info"></i>
+			<i class="ph-fill ph-info"></i>
 			<span>{t.phraseLookupDisclaimer}</span>
 		</div>
 
@@ -114,7 +114,7 @@
 						onclick={() => handleCopy(phrase)}
 						aria-label={t.copy}
 					>
-						<i class="fa-solid fa-copy"></i>
+						<i class="ph-fill ph-copy"></i>
 					</button>
 				</li>
 			{:else}

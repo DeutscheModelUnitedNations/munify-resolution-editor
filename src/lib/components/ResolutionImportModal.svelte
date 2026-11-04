@@ -96,7 +96,7 @@
 	<div class="modal-box max-w-2xl">
 		<div class="flex items-center justify-between mb-4">
 			<h3 class="font-bold text-lg">
-				<i class="fa-solid fa-file-import mr-2"></i>
+				<i class="ph-fill ph-file-arrow-up mr-2"></i>
 				{t.resolutionImportResolution}
 			</h3>
 			<button
@@ -105,7 +105,7 @@
 				onclick={onClose}
 				aria-label={t.close}
 			>
-				<i class="fa-solid fa-xmark"></i>
+				<i class="ph-fill ph-x"></i>
 			</button>
 		</div>
 
@@ -133,7 +133,7 @@
 		{:else if result && result.valid && summary}
 			<div class="mt-4 bg-base-200 rounded-lg p-3 text-sm space-y-1">
 				<div class="flex items-center gap-2 font-medium text-success">
-					<i class="fa-solid fa-circle-check"></i>
+					<i class="ph-fill ph-check-circle"></i>
 					<span>{summary.committeeName || '—'}</span>
 				</div>
 				{#if summary.headline}
@@ -150,7 +150,7 @@
 				{#if summary.warnings.length > 0}
 					<div class="mt-2">
 						<div class="font-medium text-warning">
-							<i class="fa-solid fa-triangle-exclamation mr-1"></i>
+							<i class="ph-fill ph-warning mr-1"></i>
 							{t.resolutionImportResolutionWarnings} ({summary.warnings.length})
 						</div>
 						<ul class="list-disc list-inside text-base-content/60">
@@ -164,7 +164,7 @@
 		{:else if result && !result.valid}
 			<div class="mt-4 bg-error/10 rounded-lg p-3 text-sm">
 				<div class="font-medium text-error mb-1">
-					<i class="fa-solid fa-circle-xmark mr-1"></i>
+					<i class="ph-fill ph-x-circle mr-1"></i>
 					{t.resolutionImportResolutionInvalid}
 				</div>
 				<ul class="list-disc list-inside text-base-content/70 font-mono text-xs">
@@ -183,7 +183,7 @@
 				onclick={handleImport}
 				disabled={!result || !result.valid}
 			>
-				<i class="fa-solid fa-file-import"></i>
+				<i class="ph-fill ph-file-arrow-up"></i>
 				{t.resolutionImportResolutionButton}
 			</button>
 		</div>

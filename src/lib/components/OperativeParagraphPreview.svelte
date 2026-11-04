@@ -97,7 +97,7 @@
 				class:btn-outline={!showDiff}
 				onclick={() => (showDiff = !showDiff)}
 			>
-				<i class="fa-solid fa-code-compare"></i>
+				<i class="ph-fill ph-git-diff"></i>
 				{showDiff ? t.operativeParagraphHideDiff : t.operativeParagraphShowDiff}
 			</button>
 		</div>
@@ -114,7 +114,7 @@
 		</div>
 	{:else if isEmpty}
 		<div class="text-center text-base-content/50 py-6 font-sans">
-			<i class="fa-solid fa-paragraph text-2xl mb-2"></i>
+			<i class="ph-fill ph-paragraph text-2xl mb-2"></i>
 			<p>{t.operativeParagraphEmpty}</p>
 		</div>
 	{:else if tree}

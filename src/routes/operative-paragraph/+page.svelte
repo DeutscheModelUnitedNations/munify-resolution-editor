@@ -21,7 +21,7 @@
 <div class="container mx-auto max-w-6xl px-4 py-8">
 	<div class="mb-6">
 		<h1 class="mb-2 text-3xl font-bold">
-			<i class="fa-solid fa-paragraph text-primary"></i>
+			<i class="ph-fill ph-paragraph text-primary"></i>
 			Operative Paragraph
 		</h1>
 		<p class="text-base-content/70">
@@ -57,7 +57,7 @@
 
 	<div class="mt-8">
 		<h2 class="mb-3 text-xl font-bold">
-			<i class="fa-solid fa-eye text-primary"></i>
+			<i class="ph-fill ph-eye text-primary"></i>
 			Viewer only (with built-in diff toggle)
 		</h2>
 		<div class="rounded-lg border border-base-300 bg-white p-6 shadow-sm">

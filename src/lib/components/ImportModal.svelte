@@ -97,7 +97,7 @@
 	<div class="modal-box max-w-2xl">
 		<div class="flex items-center justify-between mb-4">
 			<h3 class="font-bold text-lg">
-				<i class="fa-solid fa-file-import mr-2"></i>
+				<i class="ph-fill ph-file-arrow-up mr-2"></i>
 				{type === 'preamble' ? t.resolutionImportPreamble : t.resolutionImportOperative}
 			</h3>
 			<button
@@ -106,7 +106,7 @@
 				onclick={onClose}
 				aria-label={t.close}
 			>
-				<i class="fa-solid fa-xmark"></i>
+				<i class="ph-fill ph-x"></i>
 			</button>
 		</div>
 
@@ -117,7 +117,7 @@
 		<!-- Tips for best results -->
 		<details class="collapse collapse-arrow bg-base-200 mb-4">
 			<summary class="collapse-title text-sm font-medium py-2 min-h-0">
-				<i class="fa-solid fa-lightbulb text-warning mr-2"></i>
+				<i class="ph-fill ph-lightbulb text-warning mr-2"></i>
 				{t.resolutionImportTipsTitle}
 			</summary>
 			<div class="collapse-content text-sm">
@@ -139,7 +139,7 @@
 		<!-- LLM formatting instructions -->
 		<details class="collapse collapse-arrow bg-base-200 mb-4">
 			<summary class="collapse-title text-sm font-medium py-2 min-h-0">
-				<i class="fa-solid fa-robot text-info mr-2"></i>
+				<i class="ph-fill ph-robot text-info mr-2"></i>
 				{t.resolutionImportLLMTitle}
 			</summary>
 			<div class="collapse-content text-sm">
@@ -157,7 +157,7 @@
 						class="btn btn-sm btn-ghost absolute top-2 right-2"
 						onclick={copyPrompt}
 					>
-						<i class="fa-solid {copied ? 'fa-check text-success' : 'fa-copy'}"></i>
+						<i class="ph-fill {copied ? 'ph-check text-success' : 'ph-copy'}"></i>
 						{copied ? t.resolutionImportLLMCopied : t.resolutionImportLLMCopyPrompt}
 					</button>
 				</div>
@@ -189,7 +189,7 @@
 					{#if type === 'preamble'}
 						{#each parsedPreamble as clause, index (index)}
 							<li class="flex items-start gap-2">
-								<i class="fa-solid fa-check text-success mt-1 shrink-0"></i>
+								<i class="ph-fill ph-check text-success mt-1 shrink-0"></i>
 								<span class="text-base-content/80">{truncate(clause)}</span>
 							</li>
 						{/each}
@@ -220,7 +220,7 @@
 				onclick={handleImport}
 				disabled={clauseCount.total === 0}
 			>
-				<i class="fa-solid fa-file-import"></i>
+				<i class="ph-fill ph-file-arrow-up"></i>
 				{interpolate(t.resolutionImportButton, { count: clauseCount.total })}
 			</button>
 		</div>

@@ -99,7 +99,7 @@
 												onclick={() => moveSub(subClause.id, 'up')}
 												disabled={disabled || subClauseIndex === 0}
 											>
-												<i class="fa-solid fa-chevron-up text-xs"></i>
+												<i class="ph-fill ph-caret-up text-xs"></i>
 											</button>
 										</div>
 										<div class="tooltip" data-tip={t.resolutionMoveDown}>
@@ -110,7 +110,7 @@
 												onclick={() => moveSub(subClause.id, 'down')}
 												disabled={disabled || subClauseIndex === subClauses.length - 1}
 											>
-												<i class="fa-solid fa-chevron-down text-xs"></i>
+												<i class="ph-fill ph-caret-down text-xs"></i>
 											</button>
 										</div>
 									</div>
@@ -124,7 +124,7 @@
 												onclick={() => indentSub(subClause.id)}
 												disabled={disabled || subClauseIndex === 0 || depth >= MAX_SUBCLAUSE_DEPTH}
 											>
-												<i class="fa-solid fa-indent text-xs"></i>
+												<i class="ph-fill ph-text-indent text-xs"></i>
 											</button>
 										</div>
 										<div class="tooltip" data-tip={t.resolutionOutdent}>
@@ -134,7 +134,7 @@
 												aria-label={t.resolutionOutdent}
 												onclick={() => outdentSub(subClause.id)}
 											>
-												<i class="fa-solid fa-outdent text-xs"></i>
+												<i class="ph-fill ph-text-outdent text-xs"></i>
 											</button>
 										</div>
 									</div>
@@ -147,7 +147,7 @@
 												aria-label={t.resolutionAddSibling}
 												onclick={() => insertSiblingAfter(subClause.id)}
 											>
-												<i class="fa-solid fa-plus text-xs"></i>
+												<i class="ph-fill ph-plus text-xs"></i>
 											</button>
 										</div>
 										{#if depth < MAX_SUBCLAUSE_DEPTH && !hasSubclausesBlock(subClause)}
@@ -158,7 +158,7 @@
 													aria-label={t.resolutionAddNested}
 													onclick={() => addNested(subClause.id)}
 												>
-													<i class="fa-solid fa-level-down text-xs"></i>
+													<i class="ph-fill ph-arrow-elbow-right-down text-xs"></i>
 												</button>
 											</div>
 										{/if}
@@ -173,7 +173,7 @@
 											aria-label={t.resolutionDeleteClause}
 											onclick={() => deleteSub(subClause.id)}
 										>
-											<i class="fa-solid fa-trash text-xs"></i>
+											<i class="ph-fill ph-trash text-xs"></i>
 										</button>
 									</div>
 								</div>
@@ -187,7 +187,7 @@
 											aria-label={t.resolutionDeleteBlock}
 											onclick={() => deleteBlock(subClause.id, block.id)}
 										>
-											<i class="fa-solid fa-trash text-xs"></i>
+											<i class="ph-fill ph-trash text-xs"></i>
 										</button>
 									</div>
 								</div>
@@ -210,7 +210,7 @@
 								class="btn btn-ghost btn-xs gap-1 text-primary"
 								onclick={() => addContinuationText(subClause.id)}
 							>
-								<i class="fa-solid fa-paragraph text-xs"></i>
+								<i class="ph-fill ph-paragraph text-xs"></i>
 								{t.resolutionAddContinuation}
 							</button>
 						</div>
